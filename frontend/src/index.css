@@ -70,3 +70,108 @@ body {
   width: 20px;
   height: 20px;
 }
+
+/* --- ESTILOS PARA EL DASHBOARD Y FORMULARIOS --- */
+
+/* Mejoras al Dashboard Card */
+.dashboard-card {
+  text-align: left;
+}
+
+.welcome-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.welcome-header h1 {
+  margin: 0;
+}
+
+.teacher-content hr {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 2rem 0;
+}
+
+/* Estilos para el Formulario de Crear Clase */
+.form-container {
+  margin-bottom: 2rem;
+}
+
+.form-container h2 {
+  margin-top: 0;
+}
+
+.form-container form {
+  display: flex;
+  gap: 10px;
+}
+
+.form-container input[type="text"] {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.form-container button {
+  padding: 10px 20px;
+  font-size: 16px;
+  color: white;
+  background-color: #1a73e8;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.form-container button:hover {
+  background-color: #1765cc;
+}
+
+.form-container button:disabled {
+  background-color: #9e9e9e;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #d93025;
+  margin-top: 10px;
+}
+
+/* Estilos para la Lista de Clases */
+.class-list-container h2 {
+  margin-top: 0;
+}
+
+.class-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.class-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.class-name {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.class-code {
+  font-family: "Courier New", Courier, monospace;
+  background-color: #e0e0e0;
+  padding: 5px 10px;
+  border-radius: 5px;
+}

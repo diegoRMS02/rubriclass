@@ -14,7 +14,20 @@ function generateCode() {
   }
   return result;
 }
+router.get("/", [isAuthenticated, isTeacher], async (req, res) => {
+  const docente_id = req.user.id;
 
+  try {
+    const clasesQuery = await db.query(
+      "SELECT * FROM Clases WHERE docente_id = $1 ORDER BY fecha_creacion DESC",
+      [docente_id]
+    );
+    res.json(clasesQuery.rows);
+  } catch (error) {
+    console.error("Error al obtener las clases:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
 // --- Ruta para crear una nueva clase ---
 // POST /api/clases
 // Protegida: solo usuarios autenticados Y que sean docentes pueden acceder.
@@ -50,11 +63,9 @@ router.post("/inscribir", isAuthenticated, async (req, res) => {
 
   // 1. Validaciones básicas
   if (usuario_rol !== "estudiante") {
-    return res
-      .status(403)
-      .json({
-        message: "Prohibido: Solo los estudiantes pueden inscribirse a clases.",
-      });
+    return res.status(403).json({
+      message: "Prohibido: Solo los estudiantes pueden inscribirse a clases.",
+    });
   }
   if (!codigo_inscripcion) {
     return res
