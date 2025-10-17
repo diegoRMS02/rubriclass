@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import CreateClassForm from "../components/CreateClassForm";
 import EnrollClassForm from "../components/EnrollClassForm";
-
+import UploadRubricForm from "../components/UploadRubricForm";
 // --- Componente para la vista del Docente ---
 function TeacherView({ user, classes, onClassCreated }) {
   return (
@@ -27,6 +27,8 @@ function TeacherView({ user, classes, onClassCreated }) {
           </ul>
         )}
       </div>
+      <hr />
+      <UploadRubricForm />
     </div>
   );
 }

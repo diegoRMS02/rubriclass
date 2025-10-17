@@ -4,7 +4,7 @@ const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const db = require("./db");
-
+const rubricaRoutes = require("./routes/rubricas");
 // Run Passport configuration
 require("./passport-config");
 
@@ -37,7 +37,7 @@ app.use(passport.session());
 // Connect the imported routers to the app
 app.use("/api/auth", authRoutes);
 app.use("/api/clases", claseRoutes);
-
+app.use("/api/rubricas", rubricaRoutes);
 // Root route for a simple server status check
 app.get("/", (req, res) => {
   res.send(
