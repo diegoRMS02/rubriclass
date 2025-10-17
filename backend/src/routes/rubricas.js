@@ -8,7 +8,20 @@ const router = express.Router();
 
 // Configuración de Multer para manejar la subida de archivos en memoria
 const upload = multer({ storage: multer.memoryStorage() });
+router.get("/", [isAuthenticated, isTeacher], async (req, res) => {
+  const docente_id = req.user.id;
 
+  try {
+    const rubricasQuery = await db.query(
+      "SELECT id, titulo, descripcion FROM Rubricas WHERE docente_id = $1 ORDER BY fecha_creacion DESC",
+      [docente_id]
+    );
+    res.json(rubricasQuery.rows);
+  } catch (error) {
+    console.error("Error al obtener las rúbricas:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
 // POST /api/rubricas/upload
 router.post(
   "/upload",

@@ -197,3 +197,39 @@ body {
   margin-top: 10px;
   font-weight: 500;
 }
+/* --- Estilos para la Lista de Rúbricas --- */
+.rubric-list-container {
+  margin-top: 2rem;
+}
+
+.rubric-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rubric-item {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s;
+}
+
+.rubric-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.rubric-title {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+  color: #202124;
+}
+
+.rubric-description {
+  margin: 0;
+  font-size: 14px;
+  color: #5f6368;
+}
