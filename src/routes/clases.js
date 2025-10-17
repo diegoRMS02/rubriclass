@@ -43,5 +43,62 @@ router.post("/", [isAuthenticated, isTeacher], async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
+router.post("/inscribir", isAuthenticated, async (req, res) => {
+  const { codigo_inscripcion } = req.body;
+  const usuario_id = req.user.id;
+  const usuario_rol = req.user.rol;
+
+  // 1. Validaciones básicas
+  if (usuario_rol !== "estudiante") {
+    return res
+      .status(403)
+      .json({
+        message: "Prohibido: Solo los estudiantes pueden inscribirse a clases.",
+      });
+  }
+  if (!codigo_inscripcion) {
+    return res
+      .status(400)
+      .json({ message: "El código de inscripción es requerido." });
+  }
+
+  try {
+    // 2. Buscar la clase que corresponde al código
+    const claseQuery = await db.query(
+      "SELECT id FROM Clases WHERE codigo_inscripcion = $1",
+      [codigo_inscripcion]
+    );
+
+    if (claseQuery.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Clase no encontrada con ese código." });
+    }
+    const clase_id = claseQuery.rows[0].id;
+
+    // 3. Verificar que el estudiante no esté ya inscrito
+    const inscripcionExistenteQuery = await db.query(
+      "SELECT * FROM Inscripciones WHERE usuario_id = $1 AND clase_id = $2",
+      [usuario_id, clase_id]
+    );
+
+    if (inscripcionExistenteQuery.rows.length > 0) {
+      return res
+        .status(409)
+        .json({ message: "Ya estás inscrito en esta clase." });
+    }
+
+    // 4. Si todo está bien, registrar la inscripción
+    await db.query(
+      "INSERT INTO Inscripciones (usuario_id, clase_id) VALUES ($1, $2)",
+      [usuario_id, clase_id]
+    );
+
+    res.status(200).json({ message: "¡Inscripción exitosa!" });
+  } catch (error) {
+    console.error("Error al inscribir en la clase:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
 
 module.exports = router;
