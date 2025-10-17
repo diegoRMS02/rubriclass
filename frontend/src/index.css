@@ -1,0 +1,72 @@
+/* Importar una fuente más agradable desde Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+/* Reset básico y estilos para todo el cuerpo de la página */
+body {
+  margin: 0;
+  font-family: "Roboto", sans-serif; /* Usamos la nueva fuente */
+  background-color: #f0f2f5; /* Un fondo gris claro, más suave a la vista */
+  color: #333;
+  display: flex; /* Usamos flexbox para centrar todo */
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Ocupa toda la altura de la pantalla */
+}
+
+/* El contenedor principal de nuestra página de login */
+.login-container {
+  text-align: center;
+  padding: 20px;
+}
+
+/* La "tarjeta" blanca que contendrá el formulario */
+.login-card {
+  background-color: white;
+  padding: 40px 50px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Sombra sutil para darle profundidad */
+  max-width: 400px;
+  width: 100%;
+}
+
+.login-card h1 {
+  margin-top: 0;
+  font-size: 24px;
+  color: #1c1e21;
+}
+
+.login-card p {
+  font-size: 16px;
+  color: #606770;
+  margin-bottom: 30px;
+}
+
+/* Estilo para el botón de inicio de sesión con Google */
+.google-login-button {
+  display: inline-flex; /* Permite alinear el logo y el texto */
+  align-items: center;
+  justify-content: center;
+  gap: 12px; /* Espacio entre el logo y el texto */
+  padding: 12px 24px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  background-color: #ffffff;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out; /* Animación suave para el hover */
+}
+
+/* Efecto al pasar el mouse sobre el botón */
+.google-login-button:hover {
+  background-color: #f9f9f9;
+  border-color: #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilo para el logo de Google dentro del botón */
+.google-login-button svg {
+  width: 20px;
+  height: 20px;
+}
