@@ -111,5 +111,30 @@ router.post("/inscribir", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
+// GET /api/clases/inscripciones
+router.get("/inscripciones", isAuthenticated, async (req, res) => {
+  // Nos aseguramos de que solo los estudiantes puedan acceder a esta ruta
+  if (req.user.rol !== "estudiante") {
+    return res.status(403).json({ message: "Acción solo para estudiantes." });
+  }
 
+  const usuario_id = req.user.id;
+
+  try {
+    // Esta consulta SQL une varias tablas para obtener la información necesaria
+    const inscripcionesQuery = await db.query(
+      `SELECT c.id, c.nombre_clase, u.nombre_completo as nombre_docente
+       FROM Clases c
+       JOIN Inscripciones i ON c.id = i.clase_id
+       JOIN Usuarios u ON c.docente_id = u.id
+       WHERE i.usuario_id = $1
+       ORDER BY c.nombre_clase ASC`,
+      [usuario_id]
+    );
+    res.json(inscripcionesQuery.rows);
+  } catch (error) {
+    console.error("Error al obtener las inscripciones:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
 module.exports = router;

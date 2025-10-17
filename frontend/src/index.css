@@ -175,3 +175,25 @@ body {
   padding: 5px 10px;
   border-radius: 5px;
 }
+
+/* --- ESTILOS PARA LA VISTA DEL ESTUDIANTE --- */
+
+/* Separador horizontal para el contenido del estudiante */
+.student-content hr {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 2rem 0;
+}
+
+/* Estilo para mostrar el nombre del docente en la lista de clases */
+.teacher-name {
+  font-size: 14px;
+  color: #606770;
+}
+
+/* Estilo para el mensaje de "Inscripción exitosa" */
+.success-message {
+  color: #1e8e3e; /* Un color verde para indicar éxito */
+  margin-top: 10px;
+  font-weight: 500;
+}
