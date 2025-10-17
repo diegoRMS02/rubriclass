@@ -1,72 +1,55 @@
+// --- IMPORTS ---
 require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
-
-// Importar la configuración de Passport que acabamos de crear
-require("./passport-config");
 const db = require("./db");
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Run Passport configuration
+require("./passport-config");
 
-// --- Middlewares ---
-// 1. Configuración de la sesión
+// Import route handlers
+const authRoutes = require("./routes/auth");
+const claseRoutes = require("./routes/clases");
+
+// --- INITIALIZATION & MIDDLEWARE ---
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Session configuration
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }, // Poner en 'true' si usas HTTPS
+    cookie: { secure: false }, // Set to true if using HTTPS in production
   })
 );
 
-// 2. Inicializar Passport
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- Rutas de Autenticación ---
-// Ruta inicial: redirige al usuario a la pantalla de login de Google
-app.get(
-  "/api/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+// --- ROUTES ---
+// Connect the imported routers to the app
+app.use("/api/auth", authRoutes);
+app.use("/api/clases", claseRoutes);
 
-// Ruta de callback: Google redirige aquí después del login
-app.get(
-  "/api/auth/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: "/login-failed", // Ruta a la que redirigir si falla
-    successRedirect: "/api/auth/profile", // Ruta a la que redirigir si tiene éxito
-  })
-);
-
-// Ruta protegida para ver el perfil del usuario (prueba)
-app.get("/api/auth/profile", (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).send("No estás autenticado");
-  }
-  res.json(req.user);
-});
-
-// Ruta para cerrar sesión
-app.get("/api/auth/logout", (req, res, next) => {
-  req.logout(function (err) {
-    if (err) {
-      return next(err);
-    }
-    res.redirect("/"); // Redirigir a la página principal
-  });
-});
-
-// Ruta de prueba
+// Root route for a simple server status check
 app.get("/", (req, res) => {
   res.send(
-    'Servidor funcionando. <a href="/api/auth/google">Iniciar sesión con Google</a>'
+    'Server is running. <a href="/api/auth/google">Login with Google</a>'
   );
 });
 
-// --- Iniciar Servidor ---
+// --- SERVER START ---
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  // Verify database connection on startup
+  db.query("SELECT NOW()")
+    .then(() => console.log("✅ Database connection successful."))
+    .catch((err) => console.error("❌ Database connection error:", err));
 });
