@@ -1,37 +1,58 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-// Componentes existentes
+// Componentes
 import CreateClassForm from "../components/CreateClassForm";
 import EnrollClassForm from "../components/EnrollClassForm";
 import UploadRubricForm from "../components/UploadRubricForm";
-// Nuevo componente que vamos a crear en el siguiente paso
 import RubricList from "../components/RubricList";
+import AssignRubricModal from "../components/AssignRubricModal";
+import EvaluationList from "../components/EvaluationList"; // <-- 1. IMPORTAMOS LA NUEVA LISTA
 
 // --- Componente para la vista del Docente ---
 function TeacherView() {
   const [classes, setClasses] = useState([]);
   const [rubrics, setRubrics] = useState([]);
+  const [evaluations, setEvaluations] = useState([]); // <-- 2. AÑADIMOS ESTADO PARA EVALUACIONES
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState(null);
 
-  // Función para cargar todos los datos del docente (clases y rúbricas)
+  // Carga todos los datos del docente (clases, rúbricas y evaluaciones)
   const fetchData = useCallback(async () => {
     try {
-      // Hacemos ambas peticiones al mismo tiempo para más eficiencia
-      const [classesRes, rubricsRes] = await Promise.all([
+      // 3. ACTUALIZAMOS PROMISE.ALL PARA INCLUIR EVALUACIONES
+      const [classesRes, rubricsRes, evaluationsRes] = await Promise.all([
         axios.get("/api/clases"),
         axios.get("/api/rubricas"),
+        axios.get("/api/evaluaciones"), // Pide las evaluaciones creadas
       ]);
       setClasses(classesRes.data);
       setRubrics(rubricsRes.data);
+      setEvaluations(evaluationsRes.data); // 4. GUARDAMOS LAS EVALUACIONES
     } catch (error) {
       console.error("Error al cargar los datos del docente:", error);
     }
   }, []);
 
-  // useEffect para cargar los datos cuando el componente se monta por primera vez
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleOpenModal = (clase) => {
+    setSelectedClass(clase);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedClass(null);
+    setIsModalOpen(false);
+  };
+
+  const handleSuccess = () => {
+    alert("¡Evaluación asignada con éxito!");
+    fetchData(); // <-- 5. ACTUALIZAMOS LA LISTA AL CREAR UNA NUEVA
+    handleCloseModal();
+  };
 
   return (
     <div className="teacher-content">
@@ -40,6 +61,8 @@ function TeacherView() {
         onClassCreated={(newClass) => setClasses([newClass, ...classes])}
       />
       <hr />
+
+      {/* --- LISTA DE CLASES MODIFICADA CON EL BOTÓN --- */}
       <div className="class-list-container">
         <h2>Mis Clases</h2>
         {classes.length === 0 ? (
@@ -49,25 +72,47 @@ function TeacherView() {
             {classes.map((clase) => (
               <li key={clase.id} className="class-item">
                 <span className="class-name">{clase.nombre_clase}</span>
-                <span className="class-code">
-                  Código: <strong>{clase.codigo_inscripcion}</strong>
-                </span>
+                <div className="class-actions">
+                  <span className="class-code">
+                    Código: <strong>{clase.codigo_inscripcion}</strong>
+                  </span>
+                  <button
+                    onClick={() => handleOpenModal(clase)}
+                    className="class-assign-btn"
+                  >
+                    Asignar Evaluación
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
       <hr />
-      {/* Cuando se sube una rúbrica, llamamos a fetchData para recargar la lista */}
+
+      {/* --- 6. AÑADIMOS LA LISTA DE EVALUACIONES --- */}
+      <EvaluationList evaluations={evaluations} />
+
+      <hr />
       <UploadRubricForm onUploadSuccess={fetchData} />
       <hr />
       <RubricList rubrics={rubrics} />
+
+      {/* --- RENDERIZADO DEL MODAL (solo si está abierto) --- */}
+      {isModalOpen && (
+        <AssignRubricModal
+          clase={selectedClass}
+          rubricas={rubrics}
+          onClose={handleCloseModal}
+          onSuccess={handleSuccess}
+        />
+      )}
     </div>
   );
 }
 
 // --- Componente para la vista del Estudiante ---
-// (Este componente no tiene cambios en esta feature)
 function StudentView({ user }) {
   const [classes, setClasses] = useState([]);
   const fetchClasses = useCallback(async () => {

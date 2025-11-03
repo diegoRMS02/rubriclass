@@ -5,6 +5,7 @@ const session = require("express-session");
 const passport = require("passport");
 const db = require("./db");
 const rubricaRoutes = require("./routes/rubricas");
+const evaluacionRoutes = require("./routes/evaluaciones");
 // Run Passport configuration
 require("./passport-config");
 
@@ -38,6 +39,7 @@ app.use(passport.session());
 app.use("/api/auth", authRoutes);
 app.use("/api/clases", claseRoutes);
 app.use("/api/rubricas", rubricaRoutes);
+app.use("/api/evaluaciones", evaluacionRoutes);
 // Root route for a simple server status check
 app.get("/", (req, res) => {
   res.send(
