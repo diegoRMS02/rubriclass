@@ -418,3 +418,209 @@ body {
   font-size: 16px;
   box-sizing: border-box;
 }
+
+/* --- Estilos para la Página de Evaluación --- */
+.evaluation-page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+}
+
+.evaluation-card {
+  background-color: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 900px;
+}
+
+.evaluation-card h1 {
+  margin-top: 0;
+}
+
+.deadline-passed-error {
+  font-size: 1.2rem;
+  color: #d93025;
+  font-weight: 500;
+  text-align: center;
+  padding: 20px;
+  background-color: #fbeae9;
+  border-radius: 8px;
+}
+
+.url-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.rubric-criterion {
+  margin-bottom: 1.5rem;
+}
+
+.rubric-criterion h4 {
+  margin: 0 0 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.rubric-levels {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.rubric-level {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 2px solid #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rubric-level input[type="radio"] {
+  width: 20px;
+  height: 20px;
+}
+
+/* Estilo para el nivel seleccionado */
+.rubric-level input[type="radio"]:checked + .level-content {
+  font-weight: bold;
+}
+.rubric-level input[type="radio"]:checked ~ .level-content {
+  color: #1a73e8;
+}
+.rubric-level:has(input[type="radio"]:checked) {
+  border-color: #1a73e8;
+  background-color: #e8f0fe;
+}
+
+.submit-evaluation-btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: 500;
+  color: white;
+  background-color: #1e8e3e; /* Verde para enviar */
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-evaluation-btn:hover {
+  background-color: #1a7d36;
+}
+/* ... (tus estilos anteriores van aquí arriba) ... */
+
+/* --- Estilos para la Página de Evaluación (Modo Vista) --- */
+.delivery-status-box {
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+.delivery-status-box.success {
+  background-color: #e6f4ea;
+  border: 1px solid #1e8e3e;
+  color: #1a7d36;
+}
+.delivery-status-box.error {
+  background-color: #fbeae9;
+  border: 1px solid #d93025;
+}
+.deadline-passed-error {
+  color: #d93025;
+  font-weight: 500;
+}
+
+.rubric-level-readonly {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 2px solid #f8f9fa;
+  margin-right: 1rem;
+  opacity: 0.8;
+}
+
+.rubric-level-readonly.selected {
+  border-color: #1a73e8;
+  background-color: #e8f0fe;
+  opacity: 1;
+}
+
+.rubric-level-readonly .level-content {
+  font-weight: 500;
+}
+.rubric-level-readonly.selected .level-content {
+  font-weight: bold;
+  color: #1a73e8;
+}
+
+.modify-evaluation-btn,
+.back-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+}
+
+.modify-evaluation-btn {
+  color: white;
+  background-color: #1a73e8; /* Azul */
+  border: none;
+}
+.modify-evaluation-btn:hover {
+  background-color: #1765cc;
+}
+
+.back-btn {
+  color: #333;
+  background-color: #f1f3f4; /* Gris claro */
+  border: 1px solid #ddd;
+}
+.back-btn:hover {
+  background-color: #e8eaed;
+}
+
+.file-info-text {
+  font-size: 12px;
+  color: #5f6368;
+  margin-bottom: 0.5rem;
+}
+
+/* --- Estilos para la Lista de Entregadas --- */
+
+.evaluation-item.delivered {
+  background-color: #f6fef9; /* Un tono verde muy claro */
+  border-color: #1e8e3e;
+}
+
+.evaluation-item.delivered .evaluation-title-link {
+  color: #1a7d36; /* Un verde más oscuro para el enlace */
+}
+
+.evaluation-delivered-date {
+  font-size: 14px;
+  color: #1a7d36;
+  font-weight: 500;
+}

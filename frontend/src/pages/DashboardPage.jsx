@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 
 // Componentes
 import CreateClassForm from "../components/CreateClassForm";
@@ -7,32 +8,31 @@ import EnrollClassForm from "../components/EnrollClassForm";
 import UploadRubricForm from "../components/UploadRubricForm";
 import RubricList from "../components/RubricList";
 import AssignRubricModal from "../components/AssignRubricModal";
-import EvaluationList from "../components/EvaluationList"; // <-- 1. IMPORTAMOS LA NUEVA LISTA
+import EvaluationList from "../components/EvaluationList";
 
 // --- Componente para la vista del Docente ---
-function TeacherView() {
+function TeacherView({ user }) {
   const [classes, setClasses] = useState([]);
   const [rubrics, setRubrics] = useState([]);
-  const [evaluations, setEvaluations] = useState([]); // <-- 2. AÑADIMOS ESTADO PARA EVALUACIONES
+  const [evaluations, setEvaluations] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
 
-  // Carga todos los datos del docente (clases, rúbricas y evaluaciones)
   const fetchData = useCallback(async () => {
+    if (!user) return;
     try {
-      // 3. ACTUALIZAMOS PROMISE.ALL PARA INCLUIR EVALUACIONES
       const [classesRes, rubricsRes, evaluationsRes] = await Promise.all([
         axios.get("/api/clases"),
         axios.get("/api/rubricas"),
-        axios.get("/api/evaluaciones"), // Pide las evaluaciones creadas
+        axios.get("/api/evaluaciones"),
       ]);
       setClasses(classesRes.data);
       setRubrics(rubricsRes.data);
-      setEvaluations(evaluationsRes.data); // 4. GUARDAMOS LAS EVALUACIONES
+      setEvaluations(evaluationsRes.data);
     } catch (error) {
       console.error("Error al cargar los datos del docente:", error);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchData();
@@ -42,15 +42,13 @@ function TeacherView() {
     setSelectedClass(clase);
     setIsModalOpen(true);
   };
-
   const handleCloseModal = () => {
     setSelectedClass(null);
     setIsModalOpen(false);
   };
-
   const handleSuccess = () => {
     alert("¡Evaluación asignada con éxito!");
-    fetchData(); // <-- 5. ACTUALIZAMOS LA LISTA AL CREAR UNA NUEVA
+    fetchData();
     handleCloseModal();
   };
 
@@ -61,8 +59,6 @@ function TeacherView() {
         onClassCreated={(newClass) => setClasses([newClass, ...classes])}
       />
       <hr />
-
-      {/* --- LISTA DE CLASES MODIFICADA CON EL BOTÓN --- */}
       <div className="class-list-container">
         <h2>Mis Clases</h2>
         {classes.length === 0 ? (
@@ -88,18 +84,12 @@ function TeacherView() {
           </ul>
         )}
       </div>
-
       <hr />
-
-      {/* --- 6. AÑADIMOS LA LISTA DE EVALUACIONES --- */}
       <EvaluationList evaluations={evaluations} />
-
       <hr />
       <UploadRubricForm onUploadSuccess={fetchData} />
       <hr />
       <RubricList rubrics={rubrics} />
-
-      {/* --- RENDERIZADO DEL MODAL (solo si está abierto) --- */}
       {isModalOpen && (
         <AssignRubricModal
           clase={selectedClass}
@@ -115,23 +105,36 @@ function TeacherView() {
 // --- Componente para la vista del Estudiante ---
 function StudentView({ user }) {
   const [classes, setClasses] = useState([]);
-  const fetchClasses = useCallback(async () => {
+  const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
+  // --- 1. NUEVO ESTADO PARA LAS TAREAS ENTREGADAS ---
+  const [evaluacionesEntregadas, setEvaluacionesEntregadas] = useState([]);
+
+  const fetchStudentData = useCallback(async () => {
+    if (!user) return;
     try {
-      const response = await axios.get("/api/clases/inscripciones");
-      setClasses(response.data);
+      // --- 2. PEDIMOS LOS 3 DATOS AL MISMO TIEMPO ---
+      const [classesRes, pendientesRes, entregadasRes] = await Promise.all([
+        axios.get("/api/clases/inscripciones"),
+        axios.get("/api/evaluaciones/pendientes"), // Tareas pendientes
+        axios.get("/api/evaluaciones/entregadas"), // Tareas ya entregadas
+      ]);
+      setClasses(classesRes.data);
+      setEvaluacionesPendientes(pendientesRes.data);
+      // --- 3. GUARDAMOS LA NUEVA LISTA ---
+      setEvaluacionesEntregadas(entregadasRes.data);
     } catch (error) {
-      console.error("Error al cargar las clases:", error);
+      console.error("Error al cargar los datos del estudiante:", error);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    fetchClasses();
-  }, [fetchClasses]);
+    fetchStudentData();
+  }, [fetchStudentData]);
 
   return (
     <div className="student-content">
       <hr />
-      <EnrollClassForm onClassEnrolled={fetchClasses} />
+      <EnrollClassForm onClassEnrolled={fetchStudentData} />
       <hr />
       <div className="class-list-container">
         <h2>Mis Clases Inscritas</h2>
@@ -145,6 +148,78 @@ function StudentView({ user }) {
                 <span className="teacher-name">
                   Docente: {clase.nombre_docente}
                 </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <hr />
+
+      {/* --- LISTA DE EVALUACIONES PENDIENTES (SIN CAMBIOS) --- */}
+      <div className="evaluation-list-container">
+        <h2>Evaluaciones Pendientes</h2>
+        {evaluacionesPendientes.length === 0 ? (
+          <p>¡Genial! No tienes evaluaciones pendientes.</p>
+        ) : (
+          <ul className="evaluation-list">
+            {evaluacionesPendientes.map((evaluacion) => (
+              <li key={evaluacion.id} className="evaluation-item">
+                <div className="evaluation-header">
+                  <Link
+                    to={`/evaluacion/${evaluacion.id}`}
+                    className="evaluation-title-link"
+                  >
+                    {evaluacion.nombre_evaluacion}
+                  </Link>
+                </div>
+                <div className="evaluation-details">
+                  <p>
+                    <strong>Clase:</strong> {evaluacion.nombre_clase}
+                  </p>
+                  {evaluacion.fecha_fin ? (
+                    <div className="evaluation-due-date">
+                      <strong>Fecha Límite:</strong>{" "}
+                      {new Date(evaluacion.fecha_fin).toLocaleString("es-ES")}
+                    </div>
+                  ) : (
+                    <p>Sin fecha límite</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <hr />
+
+      {/* --- 4. NUEVA LISTA DE EVALUACIONES ENTREGADAS --- */}
+      <div className="evaluation-list-container">
+        <h2>Evaluaciones Entregadas</h2>
+        {evaluacionesEntregadas.length === 0 ? (
+          <p>Aún no has completado ninguna evaluación.</p>
+        ) : (
+          <ul className="evaluation-list">
+            {evaluacionesEntregadas.map((evaluacion) => (
+              <li key={evaluacion.id} className="evaluation-item delivered">
+                <div className="evaluation-header">
+                  {/* El enlace lleva al mismo sitio (Modo Vista) */}
+                  <Link
+                    to={`/evaluacion/${evaluacion.id}`}
+                    className="evaluation-title-link"
+                  >
+                    {evaluacion.nombre_evaluacion}
+                  </Link>
+                </div>
+                <div className="evaluation-details">
+                  <p>
+                    <strong>Clase:</strong> {evaluacion.nombre_clase}
+                  </p>
+                  <div className="evaluation-delivered-date">
+                    <strong>Entregado:</strong>{" "}
+                    {new Date(evaluacion.fecha_entrega).toLocaleString("es-ES")}
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
@@ -173,8 +248,7 @@ function DashboardPage({ user }) {
           Tu rol asignado es: <strong>{user.rol}</strong>
         </p>
 
-        {/* Renderizado condicional basado en el rol del usuario */}
-        {user.rol === "docente" && <TeacherView />}
+        {user.rol === "docente" && <TeacherView user={user} />}
         {user.rol === "estudiante" && <StudentView user={user} />}
       </div>
     </div>

@@ -1,46 +1,82 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+// 1. Importamos las herramientas de React Router
+import { Routes, Route, Navigate } from "react-router-dom";
+
+// Importamos nuestras páginas
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
+import EvaluationPage from "./pages/EvaluationPage"; // <-- La nueva página
 
 function App() {
-  // 'user' guardará los datos del usuario si está logueado, o será null si no.
   const [user, setUser] = useState(null);
-  // 'loading' nos ayudará a mostrar un mensaje mientras verificamos la sesión.
   const [loading, setLoading] = useState(true);
 
-  // useEffect se ejecuta una sola vez cuando el componente se carga.
   useEffect(() => {
-    // Función para verificar si hay una sesión activa en el backend.
     const checkUserSession = async () => {
       try {
-        // Hacemos una petición a la ruta que nos devuelve el perfil del usuario.
         const response = await axios.get("/api/auth/profile");
-        // Si la petición es exitosa (código 200), guardamos los datos del usuario.
         setUser(response.data);
       } catch (error) {
-        // Si hay un error (ej. 401 No Autorizado), significa que no hay sesión activa.
-        // No hacemos nada, el estado 'user' seguirá siendo null.
-        console.log("No hay una sesión de usuario activa.");
+        console.log("No hay sesión de usuario activa.");
       } finally {
-        // Haya o no sesión, marcamos que la verificación ha terminado.
         setLoading(false);
       }
     };
-
     checkUserSession();
-  }, []); // El array vacío [] asegura que esto se ejecute solo una vez.
+  }, []);
 
-  // --- Renderizado Condicional ---
-
-  // 1. Mientras estamos verificando, mostramos un mensaje de carga.
+  // Mientras verificamos la sesión, mostramos "Cargando..."
   if (loading) {
     return <div>Cargando...</div>;
   }
 
-  // 2. Cuando la verificación termina, decidimos qué página mostrar.
-  //    Si 'user' tiene datos, muestra el Dashboard. Si no, muestra el Login.
-  return user ? <DashboardPage user={user} /> : <LoginPage />;
+  // --- 2. AQUÍ ESTÁ LA NUEVA LÓGICA DE RUTAS ---
+  return (
+    <Routes>
+      {/* Ruta 1: La raíz ("/") */}
+      <Route
+        path="/"
+        element={
+          // Si el usuario ESTÁ logueado, muestra el Dashboard.
+          user ? (
+            <DashboardPage user={user} />
+          ) : (
+            // Si NO está logueado, redirige a /login.
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      {/* Ruta 2: La página de Login ("/login") */}
+      <Route
+        path="/login"
+        element={
+          // Si el usuario ESTÁ logueado, redirige al Dashboard.
+          user ? (
+            <Navigate to="/" replace />
+          ) : (
+            // Si NO está logueado, muestra la página de Login.
+            <LoginPage />
+          )
+        }
+      />
+
+      {/* Ruta 3: La nueva página de Evaluación */}
+      <Route
+        path="/evaluacion/:id"
+        element={
+          // Si el usuario ESTÁ logueado, muestra la página de Evaluación.
+          user ? (
+            <EvaluationPage user={user} />
+          ) : (
+            // Si NO está logueado, lo patea al Login.
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+    </Routes>
+  );
 }
 
 export default App;
