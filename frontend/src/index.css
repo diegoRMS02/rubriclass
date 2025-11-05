@@ -351,6 +351,14 @@ body {
   margin: 0;
 }
 
+/* --- Estilo para la Fecha Límite en la Lista --- */
+.evaluation-due-date {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  font-size: 14px;
+  color: #d93025; /* Rojo para que resalte que es una fecha límite */
+}
 .evaluation-item {
   background-color: #f8f9fa; /* Un fondo leggermente gris */
   border: 1px solid #e0e0e0;
@@ -390,4 +398,23 @@ body {
 
 .evaluation-details p strong {
   color: #333;
+}
+
+/* --- Estilos para el Formulario Modal Mejorado --- */
+
+/* Contenedor para poner 2 campos en una fila */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Estilo para que el DatePicker ocupe todo el ancho */
+.datepicker-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
 }
