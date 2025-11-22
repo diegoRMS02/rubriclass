@@ -838,3 +838,21 @@ body {
   display: flex;
   align-items: center;
 }
+
+.export-btn {
+  background-color: #137333; /* Verde Excel */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.export-btn:hover {
+  background-color: #0f5c29;
+}

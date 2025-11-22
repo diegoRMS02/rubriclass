@@ -4,6 +4,7 @@ const { isAuthenticated, isTeacher } = require("../middleware/auth");
 const multer = require("multer");
 const { bucket } = require("../firebase-config");
 const { v4: uuidv4 } = require("uuid");
+const xlsx = require("xlsx"); // <-- Importamos la librería de Excel
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -111,7 +112,7 @@ router.get("/entregadas", isAuthenticated, async (req, res) => {
   try {
     const query = `
       SELECT e.id, e.nombre_evaluacion, e.fecha_fin, c.nombre_clase, ent.fecha_entrega,
-      cal.nota -- <-- También devolvemos la nota si ya fue calificado
+      cal.nota 
       FROM Evaluaciones e
       JOIN Clases c ON e.clase_id = c.id
       JOIN Inscripciones i ON i.clase_id = c.id
@@ -128,7 +129,7 @@ router.get("/entregadas", isAuthenticated, async (req, res) => {
   }
 });
 
-// --- 5. Ruta para que el ESTUDIANTE revise su ENTREGA (y su NOTA) ---
+// --- 5. Ruta para que el ESTUDIANTE revise su ENTREGA ---
 router.get("/:id/entrega", isAuthenticated, async (req, res) => {
   const { id: evaluacion_id_str } = req.params;
   const evaluacion_id = parseInt(evaluacion_id_str, 10);
@@ -177,7 +178,6 @@ router.get("/:id/entrega", isAuthenticated, async (req, res) => {
       );
     }
 
-    // Buscar respuestas de la rúbrica
     const respuestasQuery = await db.query(
       "SELECT criterio_id, nivel_id FROM Respuestas_Rubrica WHERE entrega_id = $1",
       [entrega_id]
@@ -187,7 +187,6 @@ router.get("/:id/entrega", isAuthenticated, async (req, res) => {
       return acc;
     }, {});
 
-    // --- NUEVO: Buscar si el docente ya calificó ---
     const calificacionQuery = await db.query(
       "SELECT * FROM Calificaciones WHERE entrega_id = $1",
       [entrega_id]
@@ -195,7 +194,6 @@ router.get("/:id/entrega", isAuthenticated, async (req, res) => {
     const calificacion =
       calificacionQuery.rows.length > 0 ? calificacionQuery.rows[0] : null;
 
-    // Si hay calificación, buscamos el detalle (qué marcó el docente)
     let detalleDocente = {};
     if (calificacion) {
       const detalleQuery = await db.query(
@@ -212,8 +210,8 @@ router.get("/:id/entrega", isAuthenticated, async (req, res) => {
       entrega: entrega,
       archivos: archivosConUrlSegura,
       respuestas: respuestas,
-      calificacion: calificacion, // Enviamos la nota y feedback
-      detalleDocente: detalleDocente, // Enviamos la rúbrica marcada por el docente
+      calificacion: calificacion,
+      detalleDocente: detalleDocente,
     });
   } catch (error) {
     console.error("Error al obtener la entrega:", error);
@@ -276,7 +274,6 @@ router.get("/:id", isAuthenticated, async (req, res) => {
 });
 
 // --- 7. Ruta para que el ESTUDIANTE ENTREGUE o MODIFIQUE su tarea ---
-// (Sin cambios importantes, se mantiene igual)
 router.post(
   "/:id/entregar",
   isAuthenticated,
@@ -347,6 +344,7 @@ router.post(
         const nombreArchivoUnico = `${uuidv4()}-${archivo.originalname}`;
         const rutaArchivoEnFirebase = `entregas/${nombreArchivoUnico}`;
         const fileUpload = bucket.file(rutaArchivoEnFirebase);
+
         const blobStream = fileUpload.createWriteStream({
           metadata: { contentType: archivo.mimetype },
         });
@@ -407,7 +405,7 @@ router.get(
          u.email as email_estudiante,
          u.id as usuario_id,
          c.id as calificacion_id,
-         c.nota -- <-- NUEVO: Devolvemos la nota si ya existe
+         c.nota 
        FROM Inscripciones i
        JOIN Usuarios u ON i.usuario_id = u.id
        JOIN Evaluaciones ev ON ev.id = $1
@@ -431,7 +429,7 @@ router.post(
   [isAuthenticated, isTeacher],
   async (req, res) => {
     const { entregaId } = req.params;
-    const { feedback, detalles, nota } = req.body; // <-- NUEVO: Recibimos 'nota'
+    const { feedback, detalles, nota } = req.body;
     const docente_id = req.user.id;
 
     try {
@@ -447,7 +445,6 @@ router.post(
       if (existingCalificacion.rows.length > 0) {
         calificacion_id = existingCalificacion.rows[0].id;
         await db.query(
-          // <-- NUEVO: Actualizamos la nota
           "UPDATE Calificaciones SET feedback = $1, nota = $2, fecha_calificacion = NOW() WHERE id = $3",
           [feedback, nota, calificacion_id]
         );
@@ -457,7 +454,6 @@ router.post(
         );
       } else {
         const calificacionResult = await db.query(
-          // <-- NUEVO: Insertamos la nota
           `INSERT INTO Calificaciones (entrega_id, docente_id, feedback, nota) 
              VALUES ($1, $2, $3, $4) RETURNING id`,
           [entregaId, docente_id, feedback, nota]
@@ -538,7 +534,7 @@ router.get(
 
       res.json({
         archivos: archivosConUrl,
-        calificacion: calificacion, // Incluirá la 'nota'
+        calificacion: calificacion,
         detalles: detallesCalificacion,
       });
     } catch (error) {
@@ -547,5 +543,75 @@ router.get(
     }
   }
 );
+
+// --- 11. (NUEVA) Ruta para EXPORTAR las notas a Excel ---
+router.get("/:id/exportar", [isAuthenticated, isTeacher], async (req, res) => {
+  const { id: evaluacion_id } = req.params;
+
+  try {
+    // 1. Obtener datos de la evaluación
+    const evalResult = await db.query(
+      "SELECT nombre_evaluacion FROM Evaluaciones WHERE id = $1",
+      [evaluacion_id]
+    );
+    if (evalResult.rows.length === 0)
+      return res.status(404).send("Evaluación no encontrada");
+    const nombreEvaluacion = evalResult.rows[0].nombre_evaluacion;
+
+    // 2. Obtener lista de alumnos y sus notas
+    const reporteQuery = await db.query(
+      `SELECT 
+         u.nombre_completo as "Estudiante",
+         u.email as "Correo",
+         CASE WHEN e.id IS NOT NULL THEN 'Entregado' ELSE 'Pendiente' END as "Estado",
+         TO_CHAR(e.fecha_entrega, 'YYYY-MM-DD HH24:MI') as "Fecha Entrega",
+         c.nota as "Nota Final",
+         c.feedback as "Comentarios"
+       FROM Inscripciones i
+       JOIN Usuarios u ON i.usuario_id = u.id
+       JOIN Evaluaciones ev ON ev.id = $1
+       LEFT JOIN Entregas e ON e.usuario_id = u.id AND e.evaluacion_id = $1
+       LEFT JOIN Calificaciones c ON c.entrega_id = e.id
+       WHERE i.clase_id = ev.clase_id
+       ORDER BY u.nombre_completo ASC`,
+      [evaluacion_id]
+    );
+
+    const datos = reporteQuery.rows;
+
+    // 3. Generar Excel con la librería 'xlsx'
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(datos);
+
+    // Ajustar ancho de columnas (opcional)
+    const wscols = [
+      { wch: 30 }, // Nombre
+      { wch: 30 }, // Correo
+      { wch: 15 }, // Estado
+      { wch: 20 }, // Fecha
+      { wch: 10 }, // Nota
+      { wch: 50 }, // Comentarios
+    ];
+    worksheet["!cols"] = wscols;
+
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Resultados");
+
+    // 4. Enviar el archivo al cliente (navegador)
+    const buffer = xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="Notas-${nombreEvaluacion}.xlsx"`
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.send(buffer);
+  } catch (error) {
+    console.error("Error al exportar notas:", error);
+    res.status(500).send("Error al generar el reporte.");
+  }
+});
 
 module.exports = router;

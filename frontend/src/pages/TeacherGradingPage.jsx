@@ -12,7 +12,7 @@ function TeacherGradingPage() {
 
   const [entregas, setEntregas] = useState([]);
   const [evaluacionInfo, setEvaluacionInfo] = useState(null);
-  const [rubrica, setRubrica] = useState([]); // Necesitamos la rúbrica para el modal
+  const [rubrica, setRubrica] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Estados para controlar el Modal
@@ -22,12 +22,10 @@ function TeacherGradingPage() {
   // Función para cargar datos
   const fetchData = async () => {
     try {
-      // 1. Info de la evaluación y rúbrica
       const evalRes = await axios.get(`/api/evaluaciones/${id}`);
       setEvaluacionInfo(evalRes.data.evaluacion);
       setRubrica(evalRes.data.rubrica);
 
-      // 2. Lista de entregas de los estudiantes
       const entregasRes = await axios.get(
         `/api/evaluaciones/${id}/entregas_docente`
       );
@@ -57,9 +55,33 @@ function TeacherGradingPage() {
   const handleGradeSuccess = () => {
     alert("Calificación guardada correctamente");
     handleCloseModal();
-    fetchData(); // Recargamos la lista para ver el estado "Calificado"
+    fetchData();
   };
-  // ---------------------------
+
+  // --- NUEVA FUNCIÓN: EXPORTAR NOTAS ---
+  const handleExport = async () => {
+    try {
+      const response = await axios.get(`/api/evaluaciones/${id}/exportar`, {
+        responseType: "blob", // Importante para recibir archivos
+      });
+
+      // Crear un enlace invisible para descargar el archivo
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      // El nombre del archivo viene del backend o usamos uno por defecto
+      link.setAttribute(
+        "download",
+        `Reporte_Notas_${evaluacionInfo.nombre_evaluacion}.xlsx`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error al exportar:", error);
+      alert("Error al exportar las notas.");
+    }
+  };
 
   if (loading)
     return <div className="p-20">Cargando panel de calificación...</div>;
@@ -69,14 +91,29 @@ function TeacherGradingPage() {
   return (
     <div className="grading-container">
       <div className="grading-header">
-        <button onClick={() => navigate("/")} className="back-btn mb-4">
-          ← Volver al Dashboard
-        </button>
-        <h1>Calificar: {evaluacionInfo.nombre_evaluacion}</h1>
-        <p className="text-gray">
-          Tipo: <strong>{evaluacionInfo.tipo_evaluacion}</strong> | Entrega:{" "}
-          <strong>{evaluacionInfo.tipo_entrega}</strong>
-        </p>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <div>
+            <button onClick={() => navigate("/")} className="back-btn mb-4">
+              ← Volver al Dashboard
+            </button>
+            <h1>Calificar: {evaluacionInfo.nombre_evaluacion}</h1>
+            <p className="text-gray">
+              Tipo: <strong>{evaluacionInfo.tipo_evaluacion}</strong> | Entrega:{" "}
+              <strong>{evaluacionInfo.tipo_entrega}</strong>
+            </p>
+          </div>
+
+          {/* BOTÓN DE EXPORTAR */}
+          <button onClick={handleExport} className="export-btn">
+            📊 Exportar Notas
+          </button>
+        </div>
       </div>
 
       <div className="students-table-container">
@@ -112,11 +149,10 @@ function TeacherGradingPage() {
                     : "-"}
                 </td>
                 <td>
-                  {/* Solo mostramos el botón si el estudiante entregó */}
                   {item.entrega_id ? (
                     <button
                       className="grade-btn"
-                      onClick={() => handleOpenGradeModal(item)} // <-- AQUÍ ESTÁ EL CAMBIO
+                      onClick={() => handleOpenGradeModal(item)}
                     >
                       {item.calificacion_id ? "Editar Nota" : "Calificar"}
                     </button>
@@ -137,7 +173,6 @@ function TeacherGradingPage() {
         </table>
       </div>
 
-      {/* --- RENDERIZADO DEL MODAL --- */}
       {isModalOpen && selectedStudent && (
         <GradingModal
           student={selectedStudent}
