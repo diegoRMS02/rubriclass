@@ -110,11 +110,13 @@ router.get("/entregadas", isAuthenticated, async (req, res) => {
   const usuario_id = req.user.id;
   try {
     const query = `
-      SELECT e.id, e.nombre_evaluacion, e.fecha_fin, c.nombre_clase, ent.fecha_entrega
+      SELECT e.id, e.nombre_evaluacion, e.fecha_fin, c.nombre_clase, ent.fecha_entrega,
+      cal.nota -- <-- También devolvemos la nota si ya fue calificado
       FROM Evaluaciones e
       JOIN Clases c ON e.clase_id = c.id
       JOIN Inscripciones i ON i.clase_id = c.id
       JOIN Entregas ent ON ent.evaluacion_id = e.id
+      LEFT JOIN Calificaciones cal ON cal.entrega_id = ent.id
       WHERE i.usuario_id = $1 AND ent.usuario_id = $1
       ORDER BY ent.fecha_entrega DESC;
     `;
@@ -126,7 +128,7 @@ router.get("/entregadas", isAuthenticated, async (req, res) => {
   }
 });
 
-// --- 5. (MODIFICADA) Ruta para que el ESTUDIANTE revise su ENTREGA ---
+// --- 5. Ruta para que el ESTUDIANTE revise su ENTREGA (y su NOTA) ---
 router.get("/:id/entrega", isAuthenticated, async (req, res) => {
   const { id: evaluacion_id_str } = req.params;
   const evaluacion_id = parseInt(evaluacion_id_str, 10);
@@ -155,46 +157,63 @@ router.get("/:id/entrega", isAuthenticated, async (req, res) => {
       [entrega_id]
     );
 
-    // --- INICIO DE LA MODIFICACIÓN (Generar URL Segura) ---
     let archivosConUrlSegura = [];
     if (archivosQuery.rows.length > 0) {
-      // Opciones para la URL firmada: válida por 15 minutos
       const options = {
         version: "v4",
         action: "read",
-        expires: Date.now() + 15 * 60 * 1000, // 15 minutos
+        expires: Date.now() + 15 * 60 * 1000,
       };
-
-      // Generamos una URL segura para cada archivo
       archivosConUrlSegura = await Promise.all(
         archivosQuery.rows.map(async (archivo) => {
-          // Usamos la 'ruta_archivo' (ej. 'entregas/uuid-archivo.pdf')
           const [signedUrl] = await bucket
             .file(archivo.ruta_archivo)
             .getSignedUrl(options);
           return {
             ...archivo,
-            archivo_url: signedUrl, // Reemplazamos la ruta por la URL temporal segura
+            archivo_url: signedUrl,
           };
         })
       );
     }
-    // --- FIN DE LA MODIFICACIÓN ---
 
+    // Buscar respuestas de la rúbrica
     const respuestasQuery = await db.query(
       "SELECT criterio_id, nivel_id FROM Respuestas_Rubrica WHERE entrega_id = $1",
       [entrega_id]
     );
-
     const respuestas = respuestasQuery.rows.reduce((acc, r) => {
       acc[r.criterio_id] = r.nivel_id;
       return acc;
     }, {});
 
+    // --- NUEVO: Buscar si el docente ya calificó ---
+    const calificacionQuery = await db.query(
+      "SELECT * FROM Calificaciones WHERE entrega_id = $1",
+      [entrega_id]
+    );
+    const calificacion =
+      calificacionQuery.rows.length > 0 ? calificacionQuery.rows[0] : null;
+
+    // Si hay calificación, buscamos el detalle (qué marcó el docente)
+    let detalleDocente = {};
+    if (calificacion) {
+      const detalleQuery = await db.query(
+        "SELECT criterio_id, nivel_id FROM Detalle_Calificacion WHERE calificacion_id = $1",
+        [calificacion.id]
+      );
+      detalleDocente = detalleQuery.rows.reduce((acc, r) => {
+        acc[r.criterio_id] = r.nivel_id;
+        return acc;
+      }, {});
+    }
+
     res.json({
       entrega: entrega,
-      archivos: archivosConUrlSegura, // <-- Enviamos los archivos con la URL segura
+      archivos: archivosConUrlSegura,
       respuestas: respuestas,
+      calificacion: calificacion, // Enviamos la nota y feedback
+      detalleDocente: detalleDocente, // Enviamos la rúbrica marcada por el docente
     });
   } catch (error) {
     console.error("Error al obtener la entrega:", error);
@@ -256,7 +275,8 @@ router.get("/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// --- 7. (MODIFICADA) Ruta para que el ESTUDIANTE ENTREGUE o MODIFIQUE su tarea ---
+// --- 7. Ruta para que el ESTUDIANTE ENTREGUE o MODIFIQUE su tarea ---
+// (Sin cambios importantes, se mantiene igual)
 router.post(
   "/:id/entregar",
   isAuthenticated,
@@ -308,7 +328,6 @@ router.post(
         await db.query("DELETE FROM Respuestas_Rubrica WHERE entrega_id = $1", [
           entrega_id,
         ]);
-        // --- (MODIFICADO) Borrar solo el registro, NO el archivo de Firebase aún ---
         await db.query("DELETE FROM Archivos_Entrega WHERE entrega_id = $1", [
           entrega_id,
         ]);
@@ -325,11 +344,9 @@ router.post(
       }
 
       if (evaluacion.tipo_entrega === "archivo" && archivo) {
-        // --- (MODIFICADO) Guardamos la ruta interna, no la URL pública ---
         const nombreArchivoUnico = `${uuidv4()}-${archivo.originalname}`;
         const rutaArchivoEnFirebase = `entregas/${nombreArchivoUnico}`;
         const fileUpload = bucket.file(rutaArchivoEnFirebase);
-
         const blobStream = fileUpload.createWriteStream({
           metadata: { contentType: archivo.mimetype },
         });
@@ -342,7 +359,6 @@ router.post(
         await new Promise((resolve, reject) => {
           blobStream.on("finish", async () => {
             try {
-              // --- (MODIFICADO) Guardamos la RUTA, no la URL
               await db.query(
                 "INSERT INTO Archivos_Entrega (entrega_id, nombre_archivo, ruta_archivo) VALUES ($1, $2, $3)",
                 [entrega_id, archivo.originalname, rutaArchivoEnFirebase]
@@ -371,6 +387,162 @@ router.post(
     } catch (error) {
       await db.query("ROLLBACK");
       console.error("Error al procesar la entrega:", error);
+      res.status(500).json({ message: "Error interno del servidor." });
+    }
+  }
+);
+
+// --- 8. Ruta para que el DOCENTE vea las entregas de una evaluación ---
+router.get(
+  "/:id/entregas_docente",
+  [isAuthenticated, isTeacher],
+  async (req, res) => {
+    const { id: evaluacion_id } = req.params;
+    try {
+      const entregasQuery = await db.query(
+        `SELECT 
+         e.id as entrega_id, 
+         e.fecha_entrega, 
+         u.nombre_completo as nombre_estudiante,
+         u.email as email_estudiante,
+         u.id as usuario_id,
+         c.id as calificacion_id,
+         c.nota -- <-- NUEVO: Devolvemos la nota si ya existe
+       FROM Inscripciones i
+       JOIN Usuarios u ON i.usuario_id = u.id
+       JOIN Evaluaciones ev ON ev.id = $1
+       LEFT JOIN Entregas e ON e.usuario_id = u.id AND e.evaluacion_id = $1
+       LEFT JOIN Calificaciones c ON c.entrega_id = e.id
+       WHERE i.clase_id = ev.clase_id
+       ORDER BY u.nombre_completo ASC`,
+        [evaluacion_id]
+      );
+      res.json(entregasQuery.rows);
+    } catch (error) {
+      console.error("Error al obtener las entregas del docente:", error);
+      res.status(500).json({ message: "Error interno del servidor." });
+    }
+  }
+);
+
+// --- 9. Ruta para que el DOCENTE califique una entrega ---
+router.post(
+  "/:entregaId/calificar",
+  [isAuthenticated, isTeacher],
+  async (req, res) => {
+    const { entregaId } = req.params;
+    const { feedback, detalles, nota } = req.body; // <-- NUEVO: Recibimos 'nota'
+    const docente_id = req.user.id;
+
+    try {
+      await db.query("BEGIN");
+
+      const existingCalificacion = await db.query(
+        "SELECT id FROM Calificaciones WHERE entrega_id = $1",
+        [entregaId]
+      );
+
+      let calificacion_id;
+
+      if (existingCalificacion.rows.length > 0) {
+        calificacion_id = existingCalificacion.rows[0].id;
+        await db.query(
+          // <-- NUEVO: Actualizamos la nota
+          "UPDATE Calificaciones SET feedback = $1, nota = $2, fecha_calificacion = NOW() WHERE id = $3",
+          [feedback, nota, calificacion_id]
+        );
+        await db.query(
+          "DELETE FROM Detalle_Calificacion WHERE calificacion_id = $1",
+          [calificacion_id]
+        );
+      } else {
+        const calificacionResult = await db.query(
+          // <-- NUEVO: Insertamos la nota
+          `INSERT INTO Calificaciones (entrega_id, docente_id, feedback, nota) 
+             VALUES ($1, $2, $3, $4) RETURNING id`,
+          [entregaId, docente_id, feedback, nota]
+        );
+        calificacion_id = calificacionResult.rows[0].id;
+      }
+
+      for (const [criterioId, nivelId] of Object.entries(detalles)) {
+        await db.query(
+          `INSERT INTO Detalle_Calificacion (calificacion_id, criterio_id, nivel_id) 
+         VALUES ($1, $2, $3)`,
+          [calificacion_id, criterioId, nivelId]
+        );
+      }
+
+      await db.query("COMMIT");
+      res.status(201).json({ message: "Calificación guardada con éxito." });
+    } catch (error) {
+      await db.query("ROLLBACK");
+      console.error("Error al calificar:", error);
+      res
+        .status(500)
+        .json({ message: "Error interno al guardar la calificación." });
+    }
+  }
+);
+
+// --- 10. Ruta para que el DOCENTE vea los detalles de una entrega ---
+router.get(
+  "/entregas/:entregaId/detalles",
+  [isAuthenticated, isTeacher],
+  async (req, res) => {
+    const { entregaId } = req.params;
+    try {
+      const archivosQuery = await db.query(
+        "SELECT * FROM Archivos_Entrega WHERE entrega_id = $1",
+        [entregaId]
+      );
+
+      let archivosConUrl = [];
+      if (archivosQuery.rows.length > 0) {
+        const options = {
+          version: "v4",
+          action: "read",
+          expires: Date.now() + 15 * 60 * 1000,
+        };
+        archivosConUrl = await Promise.all(
+          archivosQuery.rows.map(async (archivo) => {
+            const [signedUrl] = await bucket
+              .file(archivo.ruta_archivo)
+              .getSignedUrl(options);
+            return {
+              ...archivo,
+              archivo_url: signedUrl,
+            };
+          })
+        );
+      }
+
+      const calificacionQuery = await db.query(
+        "SELECT * FROM Calificaciones WHERE entrega_id = $1",
+        [entregaId]
+      );
+
+      let calificacion = null;
+      let detallesCalificacion = {};
+
+      if (calificacionQuery.rows.length > 0) {
+        calificacion = calificacionQuery.rows[0];
+        const detallesQuery = await db.query(
+          "SELECT criterio_id, nivel_id FROM Detalle_Calificacion WHERE calificacion_id = $1",
+          [calificacion.id]
+        );
+        detallesQuery.rows.forEach((row) => {
+          detallesCalificacion[row.criterio_id] = row.nivel_id;
+        });
+      }
+
+      res.json({
+        archivos: archivosConUrl,
+        calificacion: calificacion, // Incluirá la 'nota'
+        detalles: detallesCalificacion,
+      });
+    } catch (error) {
+      console.error("Error al obtener detalles de entrega:", error);
       res.status(500).json({ message: "Error interno del servidor." });
     }
   }

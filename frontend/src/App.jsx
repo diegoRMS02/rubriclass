@@ -6,7 +6,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 // Importamos nuestras páginas
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
-import EvaluationPage from "./pages/EvaluationPage"; // <-- La nueva página
+import EvaluationPage from "./pages/EvaluationPage";
+import TeacherGradingPage from "./pages/TeacherGradingPage"; // <-- NUEVA IMPORTACIÓN
 
 function App() {
   const [user, setUser] = useState(null);
@@ -31,18 +32,15 @@ function App() {
     return <div>Cargando...</div>;
   }
 
-  // --- 2. AQUÍ ESTÁ LA NUEVA LÓGICA DE RUTAS ---
   return (
     <Routes>
-      {/* Ruta 1: La raíz ("/") */}
+      {/* Ruta 1: La raíz ("/") - Dashboard */}
       <Route
         path="/"
         element={
-          // Si el usuario ESTÁ logueado, muestra el Dashboard.
           user ? (
             <DashboardPage user={user} />
           ) : (
-            // Si NO está logueado, redirige a /login.
             <Navigate to="/login" replace />
           )
         }
@@ -51,27 +49,30 @@ function App() {
       {/* Ruta 2: La página de Login ("/login") */}
       <Route
         path="/login"
+        element={user ? <Navigate to="/" replace /> : <LoginPage />}
+      />
+
+      {/* Ruta 3: Página de Evaluación (Para el Estudiante) */}
+      <Route
+        path="/evaluacion/:id"
         element={
-          // Si el usuario ESTÁ logueado, redirige al Dashboard.
           user ? (
-            <Navigate to="/" replace />
+            <EvaluationPage user={user} />
           ) : (
-            // Si NO está logueado, muestra la página de Login.
-            <LoginPage />
+            <Navigate to="/login" replace />
           )
         }
       />
 
-      {/* Ruta 3: La nueva página de Evaluación */}
+      {/* Ruta 4: Panel de Calificación (NUEVA - Solo para Docentes) */}
       <Route
-        path="/evaluacion/:id"
+        path="/docente/evaluacion/:id"
         element={
-          // Si el usuario ESTÁ logueado, muestra la página de Evaluación.
-          user ? (
-            <EvaluationPage user={user} />
+          user && user.rol === "docente" ? (
+            <TeacherGradingPage />
           ) : (
-            // Si NO está logueado, lo patea al Login.
-            <Navigate to="/login" replace />
+            // Si no es docente o no está logueado, lo mandamos al inicio
+            <Navigate to="/" replace />
           )
         }
       />

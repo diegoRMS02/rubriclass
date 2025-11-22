@@ -1,7 +1,7 @@
 import React from "react";
-// 1. Importamos las herramientas para formatear la fecha
 import { format } from "date-fns";
 import { es } from "date-fns/locale/es";
+import { Link } from "react-router-dom"; // <-- Importamos Link
 
 function EvaluationList({ evaluations }) {
   if (evaluations.length === 0) {
@@ -20,9 +20,14 @@ function EvaluationList({ evaluations }) {
         {evaluations.map((evaluacion) => (
           <li key={evaluacion.id} className="evaluation-item">
             <div className="evaluation-header">
-              <h3 className="evaluation-title">
+              {/* --- CAMBIO AQUÍ: Convertimos el título en un enlace --- */}
+              <Link
+                to={`/docente/evaluacion/${evaluacion.id}`}
+                className="evaluation-title-link"
+              >
                 {evaluacion.nombre_evaluacion}
-              </h3>
+              </Link>
+              {/* ------------------------------------------------------- */}
               <span className="evaluation-type">
                 {evaluacion.tipo_evaluacion}
               </span>
@@ -36,8 +41,6 @@ function EvaluationList({ evaluations }) {
               </p>
             </div>
 
-            {/* --- 2. AQUÍ ESTÁ EL CAMBIO --- */}
-            {/* Si existe una fecha_fin, la mostramos formateada */}
             {evaluacion.fecha_fin && (
               <div className="evaluation-due-date">
                 <strong>Fecha Límite:</strong>

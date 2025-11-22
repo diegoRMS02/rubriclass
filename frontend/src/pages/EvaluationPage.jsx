@@ -4,22 +4,25 @@ import axios from "axios";
 import { format } from "date-fns";
 import { es } from "date-fns/locale/es";
 
-// --- (NUEVO) Componente de solo lectura para la rúbrica ---
+// Importamos el componente que acabamos de crear en el Paso 2
+import EvaluationResult from "../components/EvaluationResult";
+
+// Componente interno para mostrar la autoevaluación del alumno
 function ReadOnlyRubric({ rubrica, respuestas }) {
   return (
     <div className="rubric-readonly">
-      <h2>Rúbrica Completada</h2>
+      <h3 style={{ marginTop: "0" }}>Tu Autoevaluación</h3>
       {rubrica.map((criterio) => (
         <div key={criterio.id} className="rubric-criterion">
-          <h4>{criterio.descripcion}</h4>
+          <h4 style={{ fontSize: "0.9rem", color: "#666" }}>
+            {criterio.descripcion}
+          </h4>
           <div className="rubric-levels">
             {criterio.niveles.map((nivel) => {
-              // Comprueba si este nivel fue la respuesta seleccionada
               const isSelected = respuestas[criterio.id] === nivel.id;
               return (
                 <div
                   key={nivel.id}
-                  // Añade una clase 'selected' si fue la respuesta
                   className={`rubric-level-readonly ${
                     isSelected ? "selected" : ""
                   }`}
@@ -38,57 +41,50 @@ function ReadOnlyRubric({ rubrica, respuestas }) {
 }
 
 function EvaluationPage({ user }) {
-  const { id } = useParams(); // Obtiene el "id" de la URL
-  const navigate = useNavigate(); // Para redirigir al usuario
+  const { id } = useParams();
+  const navigate = useNavigate();
 
   const [evaluacion, setEvaluacion] = useState(null);
   const [rubrica, setRubrica] = useState(null);
+
+  const [entregaData, setEntregaData] = useState(null); // Datos completos de la entrega
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // --- (MODIFICADO) Estados para la entrega ---
-  const [entrega, setEntrega] = useState(null); // Almacena la entrega existente
-  const [isModifying, setIsModifying] = useState(false); // Para cambiar entre "Vista" y "Formulario"
-
+  const [isModifying, setIsModifying] = useState(false);
   const [archivo, setArchivo] = useState(null);
   const [enlace, setEnlace] = useState("");
-  const [respuestas, setRespuestas] = useState({}); // { criterioId: nivelId, ... }
-
+  const [respuestas, setRespuestas] = useState({});
   const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
 
-  // --- (MODIFICADO) useEffect para cargar la evaluación Y la entrega ---
   useEffect(() => {
     const fetchEvaluationData = async () => {
       try {
         setLoading(true);
-        // 1. Obtener la información de la Evaluación (rúbrica, fecha límite, etc.)
+        // 1. Obtener datos generales
         const evalResponse = await axios.get(`/api/evaluaciones/${id}`);
         setEvaluacion(evalResponse.data.evaluacion);
         setRubrica(evalResponse.data.rubrica);
 
-        // 2. Comprobar la fecha límite
         const fechaFin = evalResponse.data.evaluacion.fecha_fin;
         if (fechaFin && new Date() > new Date(fechaFin)) {
           setIsDeadlinePassed(true);
         }
 
-        // 3. (NUEVO) Intentar obtener una entrega existente
+        // 2. Buscar entrega existente
         try {
           const entregaResponse = await axios.get(
             `/api/evaluaciones/${id}/entrega`
           );
-          // Si tiene éxito (encuentra una entrega), la guardamos
-          setEntrega(entregaResponse.data);
+          setEntregaData(entregaResponse.data);
+
           setRespuestas(entregaResponse.data.respuestas || {});
-          setEnlace(entregaResponse.data.entrega.enlace_url || "");
-        } catch (err) {
-          // Si da 404, significa que no hay entrega, lo cual está bien.
-          if (err.response && err.response.status !== 404) {
-            throw err; // Lanza cualquier otro error
+          if (entregaResponse.data.entrega.enlace_url) {
+            setEnlace(entregaResponse.data.entrega.enlace_url);
           }
-          console.log(
-            "No se encontró una entrega previa. Mostrando formulario."
-          );
+        } catch (err) {
+          if (err.response && err.response.status !== 404) throw err;
         }
       } catch (err) {
         setError("No se pudo cargar la evaluación.");
@@ -101,16 +97,12 @@ function EvaluationPage({ user }) {
   }, [id]);
 
   const handleRubricChange = (criterioId, nivelId) => {
-    setRespuestas((prev) => ({
-      ...prev,
-      [criterioId]: nivelId,
-    }));
+    setRespuestas((prev) => ({ ...prev, [criterioId]: nivelId }));
   };
 
-  // --- (MODIFICADO) handleSubmit ahora funciona para Crear y Modificar ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isDeadlinePassed) return; // Doble chequeo
+    if (isDeadlinePassed) return;
 
     setLoading(true);
     setError("");
@@ -130,7 +122,6 @@ function EvaluationPage({ user }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
       alert("¡Entrega realizada con éxito!");
-      // 4. (MODIFICADO) Recargamos la página para mostrar el "Modo Vista"
       window.location.reload();
     } catch (err) {
       const msg =
@@ -140,65 +131,93 @@ function EvaluationPage({ user }) {
     }
   };
 
-  // --- Renderizado ---
-  if (loading) return <div>Cargando evaluación...</div>;
+  if (loading)
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        Cargando evaluación...
+      </div>
+    );
   if (error) return <div className="error-message">{error}</div>;
   if (!evaluacion || !rubrica) return <div>No se encontró la evaluación.</div>;
 
-  // --- (NUEVO) Renderizado del MODO VISTA ---
-  // Si ya existe una entrega Y no estamos en modo "Modificar"
-  if (entrega && !isModifying) {
+  // --- MODO VISTA (Ya entregado) ---
+  if (entregaData && !isModifying) {
+    const { entrega, archivos, calificacion, detalleDocente } = entregaData;
+    const isGraded = !!calificacion; // ¿Ya tiene nota?
+
     return (
       <div className="evaluation-page">
         <div className="evaluation-card">
           <h1>{evaluacion.nombre_evaluacion}</h1>
+
+          {/* AQUI MOSTRAMOS LA NOTA SI EXISTE */}
+          {isGraded && (
+            <EvaluationResult
+              calificacion={calificacion}
+              detalleDocente={detalleDocente}
+              rubrica={rubrica}
+            />
+          )}
+
           <div className="delivery-status-box success">
             <p>
               <strong>¡Ya has entregado esta tarea!</strong>
             </p>
             <p>
               Entregado el:{" "}
-              {format(new Date(entrega.entrega.fecha_entrega), "Pp", {
-                locale: es,
-              })}
+              {format(new Date(entrega.fecha_entrega), "Pp", { locale: es })}
             </p>
           </div>
 
-          {/* Mostrar archivo o enlace entregado */}
-          {evaluacion.tipo_entrega === "archivo" &&
-            entrega.archivos &&
-            entrega.archivos.length > 0 && (
-              <div className="form-group">
-                <label>Archivo Entregado:</label>
-                <a
-                  href={entrega.archivos[0].archivo_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {entrega.archivos[0].nombre_archivo}
-                </a>
-              </div>
-            )}
-          {evaluacion.tipo_entrega === "enlace" &&
-            entrega.entrega.enlace_url && (
+          <div style={{ marginBottom: "20px" }}>
+            {evaluacion.tipo_entrega === "archivo" &&
+              archivos &&
+              archivos.length > 0 && (
+                <div className="form-group">
+                  <label>Archivo Entregado:</label>
+                  <a
+                    href={archivos[0].archivo_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "block",
+                      marginTop: "5px",
+                      color: "#1a73e8",
+                      fontWeight: "500",
+                    }}
+                  >
+                    📄 {archivos[0].nombre_archivo}
+                  </a>
+                </div>
+              )}
+            {evaluacion.tipo_entrega === "enlace" && entrega.enlace_url && (
               <div className="form-group">
                 <label>Enlace Entregado:</label>
                 <a
-                  href={entrega.entrega.enlace_url}
+                  href={entrega.enlace_url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  style={{
+                    display: "block",
+                    marginTop: "5px",
+                    color: "#1a73e8",
+                  }}
                 >
-                  {entrega.entrega.enlace_url}
+                  🔗 {entrega.enlace_url}
                 </a>
               </div>
             )}
+          </div>
 
           <hr />
-          <ReadOnlyRubric rubrica={rubrica} respuestas={respuestas} />
+          <ReadOnlyRubric
+            rubrica={rubrica}
+            respuestas={entregaData.respuestas || {}}
+          />
           <hr />
 
-          {/* Mostrar botón de Modificar SOLO si la fecha límite no ha pasado */}
-          {!isDeadlinePassed ? (
+          {/* Botón Modificar: Solo si NO ha pasado la fecha Y NO ha sido calificado */}
+          {!isDeadlinePassed && !isGraded ? (
             <button
               onClick={() => setIsModifying(true)}
               className="modify-evaluation-btn"
@@ -206,8 +225,20 @@ function EvaluationPage({ user }) {
               Modificar Entrega
             </button>
           ) : (
-            <p>La fecha límite ya pasó, no puedes modificar tu entrega.</p>
+            <p
+              style={{
+                color: "#666",
+                textAlign: "center",
+                fontStyle: "italic",
+                marginTop: "1rem",
+              }}
+            >
+              {isGraded
+                ? "Esta tarea ya fue calificada, no puedes modificarla."
+                : "La fecha límite ya pasó, no puedes modificar tu entrega."}
+            </p>
           )}
+
           <button onClick={() => navigate("/")} className="back-btn">
             Volver al Dashboard
           </button>
@@ -216,18 +247,15 @@ function EvaluationPage({ user }) {
     );
   }
 
-  // --- Renderizado del MODO FORMULARIO (para entregar o modificar) ---
-  // (Esto se muestra si no hay entrega, o si isModifying es true)
-
-  // Mensaje si la fecha límite pasó Y AÚN NO HA ENTREGADO
-  if (isDeadlinePassed && !entrega) {
+  // --- MODO FORMULARIO (Para entregar o modificar) ---
+  if (isDeadlinePassed && !entregaData) {
     return (
       <div className="evaluation-page">
         <div className="evaluation-card">
           <h1>{evaluacion.nombre_evaluacion}</h1>
           <div className="delivery-status-box error">
             <p className="deadline-passed-error">
-              La fecha límite para esta entrega ha pasado. (Cerró el:{" "}
+              La fecha límite ha pasado. (Cerró el:{" "}
               {format(new Date(evaluacion.fecha_fin), "Pp", { locale: es })})
             </p>
           </div>
@@ -237,7 +265,6 @@ function EvaluationPage({ user }) {
     );
   }
 
-  // Formulario de entrega (para entregar por primera vez o modificar)
   return (
     <div className="evaluation-page">
       <div className="evaluation-card">
@@ -250,28 +277,30 @@ function EvaluationPage({ user }) {
             {format(new Date(evaluacion.fecha_fin), "Pp", { locale: es })}
           </p>
         )}
+
         <form onSubmit={handleSubmit}>
-          {/* --- Sección de Entrega (Archivo o Enlace) --- */}
           {evaluacion.tipo_entrega === "archivo" && (
             <div className="form-group">
               <label>Subir Archivo de Tarea</label>
-              <p className="file-info-text">
-                (Si seleccionas un archivo nuevo, reemplazará al anterior)
-              </p>
+              {isModifying && (
+                <p className="file-info-text">
+                  (Sube un archivo solo si deseas reemplazar el anterior)
+                </p>
+              )}
               <input
                 type="file"
                 onChange={(e) => setArchivo(e.target.files[0])}
-                // 'required' solo si es la primera entrega
-                required={!entrega}
+                required={!entregaData}
               />
             </div>
           )}
+
           {evaluacion.tipo_entrega === "enlace" && (
             <div className="form-group">
               <label>Pegar Enlace (URL)</label>
               <input
                 type="url"
-                value={enlace} // Pre-llenado con el enlace anterior
+                value={enlace}
                 onChange={(e) => setEnlace(e.target.value)}
                 placeholder="https://..."
                 required
@@ -279,17 +308,10 @@ function EvaluationPage({ user }) {
               />
             </div>
           )}
-          {evaluacion.tipo_entrega === "solo_rubrica" && (
-            <p>
-              Esta es una evaluación de desempeño, solo necesitas completar la
-              rúbrica.
-            </p>
-          )}
 
           <hr />
+          <h2>Rúbrica de Autoevaluación</h2>
 
-          {/* --- Sección de la Rúbrica --- */}
-          <h2>Rúbrica de Evaluación</h2>
           {rubrica.map((criterio) => (
             <div key={criterio.id} className="rubric-criterion">
               <h4>{criterio.descripcion}</h4>
@@ -300,7 +322,6 @@ function EvaluationPage({ user }) {
                       type="radio"
                       name={`criterio-${criterio.id}`}
                       value={nivel.id}
-                      // Pre-marca la respuesta guardada
                       checked={respuestas[criterio.id] === nivel.id}
                       onChange={() => handleRubricChange(criterio.id, nivel.id)}
                       required
@@ -315,7 +336,6 @@ function EvaluationPage({ user }) {
           ))}
 
           <hr />
-
           <button
             type="submit"
             disabled={loading}
@@ -327,7 +347,7 @@ function EvaluationPage({ user }) {
               ? "Guardar Cambios"
               : "Enviar Entrega"}
           </button>
-          {/* Botón para cancelar la modificación */}
+
           {isModifying && (
             <button
               type="button"
@@ -337,6 +357,7 @@ function EvaluationPage({ user }) {
               Cancelar
             </button>
           )}
+
           {error && <p className="error-message">{error}</p>}
         </form>
       </div>

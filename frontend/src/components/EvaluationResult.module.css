@@ -1,0 +1,115 @@
+/* frontend/src/components/EvaluationResult.module.css */
+
+.resultCard {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-left: 5px solid #1a73e8;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #202124;
+  font-size: 1.5rem;
+}
+
+.scoreBox {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  padding: 10px 25px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 80px;
+}
+
+.scoreLabel {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.scoreValue {
+  display: block;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.feedbackSection {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid #eee;
+}
+
+.feedbackSection h3 {
+  margin: 0 0 10px 0;
+  font-size: 0.8rem;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.feedbackText {
+  margin: 0;
+  font-style: italic;
+  color: #333;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.rubricSection h3 {
+  margin-top: 0;
+  color: #202124;
+}
+
+.rubricCriterion {
+  margin-bottom: 1.5rem;
+}
+.rubricCriterion h4 {
+  margin: 0 0 0.8rem 0;
+  font-size: 1rem;
+  color: #444;
+}
+
+.levelsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.levelBadge {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.9rem;
+  color: #999;
+  text-align: center;
+  background-color: #fff;
+  transition: all 0.2s;
+}
+
+.levelBadge.selected {
+  background-color: #e6f4ea;
+  border-color: #1e8e3e;
+  color: #137333;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transform: scale(1.02);
+}

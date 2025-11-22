@@ -624,3 +624,217 @@ body {
   color: #1a7d36;
   font-weight: 500;
 }
+/* --- Estilos para el Panel de Calificación --- */
+.grading-container {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.grading-header {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.students-table-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.students-table th {
+  background-color: #f8f9fa;
+  text-align: left;
+  padding: 15px;
+  border-bottom: 2px solid #eee;
+  font-weight: 600;
+  color: #444;
+}
+
+.students-table td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.student-name {
+  font-weight: 500;
+  color: #202124;
+}
+.student-email {
+  font-size: 12px;
+  color: #5f6368;
+}
+
+/* Badges (Etiquetas) */
+.badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-right: 5px;
+}
+.badge.success {
+  background-color: #e6f4ea;
+  color: #137333;
+}
+.badge.pending {
+  background-color: #fce8e6;
+  color: #c5221f;
+}
+.badge.graded {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid #1a73e8;
+}
+
+.grade-btn {
+  background-color: #1a73e8;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.grade-btn:hover {
+  background-color: #1557b0;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.text-gray {
+  color: #5f6368;
+}
+.text-center {
+  text-align: center;
+}
+.p-4 {
+  padding: 1rem;
+}
+.p-20 {
+  padding: 20px;
+}
+/* --- Estilos para el Modal de Calificación --- */
+.grading-modal-content {
+  max-width: 800px; /* Más ancho que el normal */
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto; /* Scroll si es muy largo */
+}
+
+.grading-modal-header {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.grading-modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.file-link {
+  display: inline-block;
+  background: #f1f3f4;
+  padding: 10px 15px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: #1a73e8;
+  font-weight: 500;
+  border: 1px solid #ddd;
+}
+.file-link:hover {
+  background: #e8eaed;
+}
+
+.rubric-levels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.rubric-level-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.rubric-level-card:hover {
+  background-color: #f8f9fa;
+}
+
+.rubric-level-card.selected {
+  border-color: #1a73e8;
+  background-color: #e8f0fe;
+  color: #1a73e8;
+}
+
+.rubric-level-card input {
+  display: none;
+} /* Ocultar radio real */
+
+.level-info .points {
+  display: block;
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 4px;
+}
+
+.feedback-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+/* ... (estilos anteriores) ... */
+
+.grade-number-input {
+  font-size: 24px;
+  font-weight: bold;
+  width: 100px;
+  padding: 8px;
+  border: 2px solid #1a73e8;
+  border-radius: 6px;
+  text-align: center;
+  color: #1a73e8;
+}
+
+.rubric-sum-hint {
+  margin-left: 15px;
+  font-size: 14px;
+  color: #5f6368;
+  font-style: italic;
+}
+
+.grade-input-container {
+  display: flex;
+  align-items: center;
+}
