@@ -1,0 +1,51 @@
+.layout {
+  min-height: 100vh;
+  background-color: var(--background);
+}
+
+/* Barra Superior (Solo visible en móvil) */
+.mobileHeader {
+  display: none; /* Oculto en desktop */
+  height: var(--header-height);
+  background-color: var(--secondary);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  padding: 0 1rem;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.menuBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-main);
+}
+
+.mobileLogo {
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Contenedor del contenido principal */
+.mainContent {
+  /* En desktop, dejamos espacio a la izquierda para el sidebar */
+  margin-left: var(--sidebar-width);
+  padding: 2rem;
+  transition: margin-left 0.3s ease-in-out;
+}
+
+/* --- RESPONSIVE: MÓVIL --- */
+@media (max-width: 768px) {
+  .mobileHeader {
+    display: flex; /* Mostrar barra superior en móvil */
+  }
+
+  .mainContent {
+    margin-left: 0; /* Quitamos el margen porque el sidebar está oculto */
+    padding: 1rem;
+  }
+}

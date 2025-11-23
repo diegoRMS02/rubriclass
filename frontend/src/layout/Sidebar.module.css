@@ -1,0 +1,107 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sidebar-width);
+  background-color: var(--secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease-in-out;
+  z-index: 50;
+}
+
+/* Logotipo */
+.logoContainer {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Navegación */
+.nav {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.navLink:hover {
+  background-color: #eff6ff; /* Azul muy clarito */
+  color: var(--primary);
+}
+
+.activeLink {
+  background-color: #eff6ff;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Perfil de Usuario (Abajo) */
+.userSection {
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.userInfo {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.logoutBtn:hover {
+  background-color: #fee2e2;
+  color: var(--danger);
+  border-color: #fecaca;
+}
+
+/* --- RESPONSIVE: MÓVIL --- */
+@media (max-width: 768px) {
+  .sidebar {
+    /* En móvil, el sidebar está oculto (fuera de la pantalla a la izquierda) por defecto */
+    transform: translateX(-100%);
+  }
+
+  /* Clase para mostrar el sidebar cuando se abre el menú */
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Fondo oscuro cuando el menú está abierto en móvil */
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+  }
+}

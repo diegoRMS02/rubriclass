@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import styles from "./UploadRubricForm.module.css";
 
 function UploadRubricForm({ onUploadSuccess }) {
   const [file, setFile] = useState(null);
@@ -8,54 +9,76 @@ function UploadRubricForm({ onUploadSuccess }) {
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setError("");
-    setSuccess("");
+    if (e.target.files[0]) {
+      setFile(e.target.files[0]);
+      setError("");
+      setSuccess("");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) {
-      setError("Por favor, selecciona un archivo Excel.");
+      setError("Selecciona un archivo primero.");
       return;
     }
 
     const formData = new FormData();
     formData.append("rubricaFile", file);
-
     setLoading(true);
-    setError("");
-    setSuccess("");
 
     try {
       const response = await axios.post("/api/rubricas/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
       setSuccess(response.data.message);
+      setFile(null); // Resetear archivo
       if (onUploadSuccess) onUploadSuccess();
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Error al subir el archivo.";
-      setError(errorMessage);
+      setError("Error al subir. Verifica el formato.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="form-container">
-      <h2>Subir Nueva Rúbrica</h2>
-      <p>Sube un archivo .xlsx con el formato correcto.</p>
-      <form onSubmit={handleSubmit}>
-        <input type="file" accept=".xlsx" onChange={handleFileChange} />
-        <button type="submit" disabled={loading}>
+    <div className={styles.card}>
+      <div className={styles.header}>
+        <h3 className={styles.title}>📂 Subir Nueva Rúbrica</h3>
+        <p className={styles.subtitle}>Formato Excel (.xlsx) requerido</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.fileInputWrapper}>
+          <input
+            type="file"
+            accept=".xlsx"
+            onChange={handleFileChange}
+            className={styles.fileInput}
+          />
+          <div className={styles.fileLabel}>
+            {file ? (
+              <>
+                Archivo seleccionado:
+                <span className={styles.fileName}>{file.name}</span>
+              </>
+            ) : (
+              <span>Arrastra tu archivo aquí o haz clic</span>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className={styles.button}
+          disabled={loading || !file}
+        >
           {loading ? "Subiendo..." : "Subir Rúbrica"}
         </button>
-        {error && <p className="error-message">{error}</p>}
-        {success && <p className="success-message">{success}</p>}
       </form>
+
+      {error && <p className={styles.error}>{error}</p>}
+      {success && <p className={styles.success}>{success}</p>}
     </div>
   );
 }

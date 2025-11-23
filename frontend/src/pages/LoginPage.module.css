@@ -1,0 +1,61 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--background); /* Usa nuestras variables globales */
+  padding: 20px;
+}
+
+.card {
+  background-color: var(--secondary);
+  padding: 3rem;
+  border-radius: 16px; /* Bordes más suaves */
+  box-shadow: var(--shadow);
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 2.5rem;
+  font-size: 1rem;
+}
+
+.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px;
+  background-color: white;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 24px; /* Estilo "pill" de Google */
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.googleBtn:hover {
+  background-color: #f8faff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-color: #d2e3fc;
+}
+
+.googleIcon {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+}

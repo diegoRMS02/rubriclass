@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
+import styles from "./CreateClassForm.module.css";
 
-// Este componente recibe una función para actualizar la lista de clases
 function CreateClassForm({ onClassCreated }) {
   const [nombreClase, setNombreClase] = useState("");
   const [error, setError] = useState("");
@@ -13,7 +13,6 @@ function CreateClassForm({ onClassCreated }) {
       setError("El nombre de la clase no puede estar vacío.");
       return;
     }
-
     setLoading(true);
     setError("");
 
@@ -21,33 +20,32 @@ function CreateClassForm({ onClassCreated }) {
       const response = await axios.post("/api/clases", {
         nombre_clase: nombreClase,
       });
-      // Si la clase se crea con éxito, llamamos a la función del padre
       onClassCreated(response.data);
-      setNombreClase(""); // Limpiamos el input
+      setNombreClase("");
     } catch (err) {
-      setError("No se pudo crear la clase. Inténtalo de nuevo.");
-      console.error(err);
+      setError("No se pudo crear la clase.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="form-container">
-      <h2>Crear una Nueva Clase</h2>
-      <form onSubmit={handleSubmit}>
+    <div className={styles.card}>
+      <h3 className={styles.title}>✨ Crear una Nueva Clase</h3>
+      <form onSubmit={handleSubmit} className={styles.form}>
         <input
           type="text"
+          className={styles.input}
           value={nombreClase}
           onChange={(e) => setNombreClase(e.target.value)}
-          placeholder="Nombre de la nueva clase"
+          placeholder="Ej. Matemáticas Avanzadas"
           disabled={loading}
         />
-        <button type="submit" disabled={loading}>
+        <button type="submit" className={styles.button} disabled={loading}>
           {loading ? "Creando..." : "Crear Clase"}
         </button>
-        {error && <p className="error-message">{error}</p>}
       </form>
+      {error && <p className={styles.error}>{error}</p>}
     </div>
   );
 }

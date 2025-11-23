@@ -1,0 +1,205 @@
+/* frontend/src/pages/EvaluationPage.module.css */
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.card {
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  border: 1px solid var(--border);
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.deadline {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  display: inline-block;
+  background: #f3f4f6;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Caja de Estado de Entrega */
+.statusBox {
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.statusBox.success {
+  background-color: #ecfdf5;
+  border-color: #10b981;
+  color: #065f46;
+}
+
+.statusBox.error {
+  background-color: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.statusTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+/* Sección de Archivos */
+.fileSection {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.fileLabel {
+  font-weight: 600;
+  color: var(--text-main);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.fileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+  padding: 8px 12px;
+  background: #eff6ff;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.fileLink:hover {
+  background: #dbeafe;
+}
+
+/* Rúbrica Interactiva (Formulario) */
+.rubricCriterion {
+  margin-bottom: 2rem;
+}
+
+.rubricCriterion h4 {
+  font-size: 1.1rem;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.levelsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.levelCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  position: relative;
+  background: white;
+}
+
+.levelCard:hover {
+  border-color: var(--primary);
+  background-color: #f9fafb;
+}
+
+.levelCard.selected {
+  border-color: var(--primary);
+  background-color: #eff6ff;
+  color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary) inset;
+}
+
+.levelCard input {
+  display: none;
+} /* Ocultar radio button */
+
+.points {
+  display: block;
+  font-weight: 800;
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+.desc {
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+/* Botones de Acción */
+.submitBtn {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--success);
+  color: white;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.submitBtn:hover {
+  filter: brightness(90%);
+}
+.submitBtn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.modifyBtn {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--primary);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.modifyBtn:hover {
+  background-color: var(--primary-hover);
+}
+
+.backBtn {
+  width: 100%;
+  padding: 1rem;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.backBtn:hover {
+  background-color: #f3f4f6;
+  color: var(--text-main);
+}
+
+.lockedMessage {
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 1.5rem;
+}

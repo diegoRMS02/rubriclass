@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import styles from "./EnrollClassForm.module.css";
 
 function EnrollClassForm({ onClassEnrolled }) {
   const [codigo, setCodigo] = useState("");
@@ -9,52 +10,43 @@ function EnrollClassForm({ onClassEnrolled }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!codigo.trim()) {
-      setError("El código de inscripción es requerido.");
-      return;
-    }
+    if (!codigo.trim()) return;
 
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      // Hacemos la petición a la API que creamos en el backend
-      await axios.post("/api/clases/inscribir", {
-        codigo_inscripcion: codigo,
-      });
-      setSuccess("¡Inscripción exitosa!");
-      // Si la inscripción es exitosa, llamamos a la función del padre para recargar la lista
+      await axios.post("/api/clases/inscribir", { codigo_inscripcion: codigo });
+      setSuccess("¡Te has inscrito correctamente!");
       onClassEnrolled();
       setCodigo("");
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.message ||
-        "No se pudo inscribir. Verifica el código.";
-      setError(errorMessage);
-      console.error(err);
+      setError(err.response?.data?.message || "Error al inscribirse.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="form-container">
-      <h2>Inscribirse a una Nueva Clase</h2>
-      <form onSubmit={handleSubmit}>
+    <div className={styles.card}>
+      <h3 className={styles.title}>🔗 Unirse a una Clase</h3>
+      <form onSubmit={handleSubmit} className={styles.form}>
         <input
           type="text"
+          className={styles.input}
           value={codigo}
           onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-          placeholder="Ingresa el código de la clase"
+          placeholder="Ingresa el código (ej. A1B2C3)"
           disabled={loading}
+          maxLength={10}
         />
-        <button type="submit" disabled={loading}>
-          {loading ? "Inscribiendo..." : "Inscribirse"}
+        <button type="submit" className={styles.button} disabled={loading}>
+          {loading ? "..." : "Unirse"}
         </button>
-        {error && <p className="error-message">{error}</p>}
-        {success && <p className="success-message">{success}</p>}
       </form>
+      {error && <p className={styles.error}>{error}</p>}
+      {success && <p className={styles.success}>{success}</p>}
     </div>
   );
 }

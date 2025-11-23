@@ -3,33 +3,34 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { format } from "date-fns";
 import { es } from "date-fns/locale/es";
+import styles from "./EvaluationPage.module.css";
 
-// Importamos el componente que acabamos de crear en el Paso 2
+// Importamos el componente de resultados (que ya es bonito)
 import EvaluationResult from "../components/EvaluationResult";
 
-// Componente interno para mostrar la autoevaluación del alumno
+// Componente interno para mostrar la autoevaluación (Ahora con diseño Grid)
 function ReadOnlyRubric({ rubrica, respuestas }) {
   return (
-    <div className="rubric-readonly">
-      <h3 style={{ marginTop: "0" }}>Tu Autoevaluación</h3>
+    <div className={styles.rubricSection}>
+      <h3 style={{ marginTop: "2rem", marginBottom: "1rem", color: "#374151" }}>
+        Tu Autoevaluación
+      </h3>
       {rubrica.map((criterio) => (
-        <div key={criterio.id} className="rubric-criterion">
-          <h4 style={{ fontSize: "0.9rem", color: "#666" }}>
-            {criterio.descripcion}
-          </h4>
-          <div className="rubric-levels">
+        <div key={criterio.id} className={styles.rubricCriterion}>
+          <h4>{criterio.descripcion}</h4>
+          <div className={styles.levelsGrid}>
             {criterio.niveles.map((nivel) => {
               const isSelected = respuestas[criterio.id] === nivel.id;
               return (
                 <div
                   key={nivel.id}
-                  className={`rubric-level-readonly ${
-                    isSelected ? "selected" : ""
+                  className={`${styles.levelCard} ${
+                    isSelected ? styles.selected : ""
                   }`}
+                  style={{ cursor: "default", opacity: isSelected ? 1 : 0.6 }}
                 >
-                  <div className="level-content">
-                    <strong>{nivel.descripcion}</strong> ({nivel.puntaje} pts)
-                  </div>
+                  <span className={styles.points}>{nivel.puntaje}</span>
+                  <span className={styles.desc}>{nivel.descripcion}</span>
                 </div>
               );
             })}
@@ -46,9 +47,7 @@ function EvaluationPage({ user }) {
 
   const [evaluacion, setEvaluacion] = useState(null);
   const [rubrica, setRubrica] = useState(null);
-
-  const [entregaData, setEntregaData] = useState(null); // Datos completos de la entrega
-
+  const [entregaData, setEntregaData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -62,7 +61,6 @@ function EvaluationPage({ user }) {
     const fetchEvaluationData = async () => {
       try {
         setLoading(true);
-        // 1. Obtener datos generales
         const evalResponse = await axios.get(`/api/evaluaciones/${id}`);
         setEvaluacion(evalResponse.data.evaluacion);
         setRubrica(evalResponse.data.rubrica);
@@ -72,13 +70,11 @@ function EvaluationPage({ user }) {
           setIsDeadlinePassed(true);
         }
 
-        // 2. Buscar entrega existente
         try {
           const entregaResponse = await axios.get(
             `/api/evaluaciones/${id}/entrega`
           );
           setEntregaData(entregaResponse.data);
-
           setRespuestas(entregaResponse.data.respuestas || {});
           if (entregaResponse.data.entrega.enlace_url) {
             setEnlace(entregaResponse.data.entrega.enlace_url);
@@ -88,7 +84,6 @@ function EvaluationPage({ user }) {
         }
       } catch (err) {
         setError("No se pudo cargar la evaluación.");
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -124,84 +119,68 @@ function EvaluationPage({ user }) {
       alert("¡Entrega realizada con éxito!");
       window.location.reload();
     } catch (err) {
-      const msg =
-        err.response?.data?.message || "Error al realizar la entrega.";
-      setError(msg);
+      setError(err.response?.data?.message || "Error al realizar la entrega.");
       setLoading(false);
     }
   };
 
-  if (loading)
-    return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        Cargando evaluación...
-      </div>
-    );
-  if (error) return <div className="error-message">{error}</div>;
-  if (!evaluacion || !rubrica) return <div>No se encontró la evaluación.</div>;
+  if (loading) return <div className="p-20 text-center">Cargando...</div>;
+  if (error) return <div className={styles.error}>{error}</div>;
+  if (!evaluacion || !rubrica) return <div>No encontrado.</div>;
 
   // --- MODO VISTA (Ya entregado) ---
   if (entregaData && !isModifying) {
     const { entrega, archivos, calificacion, detalleDocente } = entregaData;
-    const isGraded = !!calificacion; // ¿Ya tiene nota?
+    const isGraded = !!calificacion;
 
     return (
-      <div className="evaluation-page">
-        <div className="evaluation-card">
-          <h1>{evaluacion.nombre_evaluacion}</h1>
+      <div className={styles.container}>
+        {/* 1. Resultados del Docente (Si existen) */}
+        {isGraded && (
+          <EvaluationResult
+            calificacion={calificacion}
+            detalleDocente={detalleDocente}
+            rubrica={rubrica}
+          />
+        )}
 
-          {/* AQUI MOSTRAMOS LA NOTA SI EXISTE */}
-          {isGraded && (
-            <EvaluationResult
-              calificacion={calificacion}
-              detalleDocente={detalleDocente}
-              rubrica={rubrica}
-            />
-          )}
+        <div className={styles.card}>
+          <h1 className={styles.title}>{evaluacion.nombre_evaluacion}</h1>
 
-          <div className="delivery-status-box success">
-            <p>
-              <strong>¡Ya has entregado esta tarea!</strong>
-            </p>
-            <p>
-              Entregado el:{" "}
+          {/* Estado de Entrega */}
+          <div className={`${styles.statusBox} ${styles.success}`}>
+            <span className={styles.statusTitle}>¡Tarea Entregada!</span>
+            <span>
+              Enviado el:{" "}
               {format(new Date(entrega.fecha_entrega), "Pp", { locale: es })}
-            </p>
+            </span>
           </div>
 
-          <div style={{ marginBottom: "20px" }}>
+          {/* Archivos / Enlaces Entregados */}
+          <div className={styles.fileSection}>
             {evaluacion.tipo_entrega === "archivo" &&
               archivos &&
               archivos.length > 0 && (
-                <div className="form-group">
-                  <label>Archivo Entregado:</label>
+                <div>
+                  <span className={styles.fileLabel}>Archivo adjunto:</span>
                   <a
                     href={archivos[0].archivo_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      display: "block",
-                      marginTop: "5px",
-                      color: "#1a73e8",
-                      fontWeight: "500",
-                    }}
+                    className={styles.fileLink}
                   >
                     📄 {archivos[0].nombre_archivo}
                   </a>
                 </div>
               )}
             {evaluacion.tipo_entrega === "enlace" && entrega.enlace_url && (
-              <div className="form-group">
-                <label>Enlace Entregado:</label>
+              <div>
+                <span className={styles.fileLabel}>Enlace adjunto:</span>
                 <a
                   href={entrega.enlace_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    display: "block",
-                    marginTop: "5px",
-                    color: "#1a73e8",
-                  }}
+                  className={styles.fileLink}
                 >
                   🔗 {entrega.enlace_url}
                 </a>
@@ -209,37 +188,37 @@ function EvaluationPage({ user }) {
             )}
           </div>
 
-          <hr />
+          {/* Autoevaluación del Alumno */}
           <ReadOnlyRubric
             rubrica={rubrica}
             respuestas={entregaData.respuestas || {}}
           />
-          <hr />
 
-          {/* Botón Modificar: Solo si NO ha pasado la fecha Y NO ha sido calificado */}
+          <hr
+            style={{
+              margin: "2rem 0",
+              borderTop: "1px solid #eee",
+              borderBottom: "none",
+            }}
+          />
+
+          {/* Botones de Acción */}
           {!isDeadlinePassed && !isGraded ? (
             <button
               onClick={() => setIsModifying(true)}
-              className="modify-evaluation-btn"
+              className={styles.modifyBtn}
             >
               Modificar Entrega
             </button>
           ) : (
-            <p
-              style={{
-                color: "#666",
-                textAlign: "center",
-                fontStyle: "italic",
-                marginTop: "1rem",
-              }}
-            >
+            <p className={styles.lockedMessage}>
               {isGraded
-                ? "Esta tarea ya fue calificada, no puedes modificarla."
-                : "La fecha límite ya pasó, no puedes modificar tu entrega."}
+                ? "🔒 Esta tarea ya fue calificada."
+                : "🔒 La fecha límite ya pasó."}
             </p>
           )}
 
-          <button onClick={() => navigate("/")} className="back-btn">
+          <button onClick={() => navigate("/")} className={styles.backBtn}>
             Volver al Dashboard
           </button>
         </div>
@@ -247,77 +226,109 @@ function EvaluationPage({ user }) {
     );
   }
 
-  // --- MODO FORMULARIO (Para entregar o modificar) ---
+  // --- MODO FORMULARIO ---
   if (isDeadlinePassed && !entregaData) {
     return (
-      <div className="evaluation-page">
-        <div className="evaluation-card">
-          <h1>{evaluacion.nombre_evaluacion}</h1>
-          <div className="delivery-status-box error">
-            <p className="deadline-passed-error">
-              La fecha límite ha pasado. (Cerró el:{" "}
-              {format(new Date(evaluacion.fecha_fin), "Pp", { locale: es })})
-            </p>
+      <div className={styles.container}>
+        <div className={styles.card}>
+          <h1 className={styles.title}>{evaluacion.nombre_evaluacion}</h1>
+          <div className={`${styles.statusBox} ${styles.error}`}>
+            <span className={styles.statusTitle}>Entrega Cerrada</span>
+            <span>
+              La fecha límite fue:{" "}
+              {format(new Date(evaluacion.fecha_fin), "Pp", { locale: es })}
+            </span>
           </div>
-          <button onClick={() => navigate(-1)}>Volver</button>
+          <button onClick={() => navigate(-1)} className={styles.backBtn}>
+            Volver
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="evaluation-page">
-      <div className="evaluation-card">
-        <h1>
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <h1 className={styles.title}>
           {isModifying ? "Modificar Entrega" : evaluacion.nombre_evaluacion}
         </h1>
+
         {evaluacion.fecha_fin && (
-          <p className="evaluation-due-date">
-            <strong>Fecha Límite:</strong>{" "}
+          <span className={styles.deadline}>
+            Vence:{" "}
             {format(new Date(evaluacion.fecha_fin), "Pp", { locale: es })}
-          </p>
+          </span>
         )}
 
         <form onSubmit={handleSubmit}>
-          {evaluacion.tipo_entrega === "archivo" && (
-            <div className="form-group">
-              <label>Subir Archivo de Tarea</label>
-              {isModifying && (
-                <p className="file-info-text">
-                  (Sube un archivo solo si deseas reemplazar el anterior)
-                </p>
-              )}
-              <input
-                type="file"
-                onChange={(e) => setArchivo(e.target.files[0])}
-                required={!entregaData}
-              />
-            </div>
-          )}
+          {/* Inputs de Archivo/Enlace */}
+          <div
+            className={styles.fileSection}
+            style={{ borderBottom: "none", marginBottom: "0" }}
+          >
+            {evaluacion.tipo_entrega === "archivo" && (
+              <div>
+                <label className={styles.fileLabel}>Subir Archivo</label>
+                {isModifying && (
+                  <p className="text-sm text-gray-500 mb-2">
+                    (Sube uno nuevo para reemplazar el anterior)
+                  </p>
+                )}
+                <input
+                  type="file"
+                  onChange={(e) => setArchivo(e.target.files[0])}
+                  required={!entregaData}
+                />
+              </div>
+            )}
 
-          {evaluacion.tipo_entrega === "enlace" && (
-            <div className="form-group">
-              <label>Pegar Enlace (URL)</label>
-              <input
-                type="url"
-                value={enlace}
-                onChange={(e) => setEnlace(e.target.value)}
-                placeholder="https://..."
-                required
-                className="url-input"
-              />
-            </div>
-          )}
+            {evaluacion.tipo_entrega === "enlace" && (
+              <div>
+                <label className={styles.fileLabel}>Pegar Enlace</label>
+                <input
+                  type="url"
+                  value={enlace}
+                  onChange={(e) => setEnlace(e.target.value)}
+                  placeholder="https://..."
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "1px solid #ddd",
+                    borderRadius: "6px",
+                  }}
+                />
+              </div>
+            )}
+          </div>
 
-          <hr />
-          <h2>Rúbrica de Autoevaluación</h2>
+          <hr
+            style={{
+              margin: "1.5rem 0",
+              borderTop: "1px solid #eee",
+              borderBottom: "none",
+            }}
+          />
+
+          {/* Rúbrica Interactiva */}
+          <h2 style={{ fontSize: "1.2rem", marginBottom: "1rem" }}>
+            Completa la Rúbrica
+          </h2>
 
           {rubrica.map((criterio) => (
-            <div key={criterio.id} className="rubric-criterion">
+            <div key={criterio.id} className={styles.rubricCriterion}>
               <h4>{criterio.descripcion}</h4>
-              <div className="rubric-levels">
+              <div className={styles.levelsGrid}>
                 {criterio.niveles.map((nivel) => (
-                  <label key={nivel.id} className="rubric-level">
+                  <label
+                    key={nivel.id}
+                    className={`${styles.levelCard} ${
+                      respuestas[criterio.id] === nivel.id
+                        ? styles.selected
+                        : ""
+                    }`}
+                  >
                     <input
                       type="radio"
                       name={`criterio-${criterio.id}`}
@@ -326,39 +337,37 @@ function EvaluationPage({ user }) {
                       onChange={() => handleRubricChange(criterio.id, nivel.id)}
                       required
                     />
-                    <div className="level-content">
-                      <strong>{nivel.descripcion}</strong> ({nivel.puntaje} pts)
-                    </div>
+                    <span className={styles.points}>{nivel.puntaje}</span>
+                    <span className={styles.desc}>{nivel.descripcion}</span>
                   </label>
                 ))}
               </div>
             </div>
           ))}
 
-          <hr />
-          <button
-            type="submit"
-            disabled={loading}
-            className="submit-evaluation-btn"
-          >
-            {loading
-              ? "Enviando..."
-              : isModifying
-              ? "Guardar Cambios"
-              : "Enviar Entrega"}
-          </button>
-
-          {isModifying && (
+          <div style={{ marginTop: "2rem" }}>
             <button
-              type="button"
-              onClick={() => setIsModifying(false)}
-              className="back-btn"
+              type="submit"
+              disabled={loading}
+              className={styles.submitBtn}
             >
-              Cancelar
+              {loading
+                ? "Enviando..."
+                : isModifying
+                ? "Guardar Cambios"
+                : "Enviar Entrega"}
             </button>
-          )}
 
-          {error && <p className="error-message">{error}</p>}
+            {isModifying && (
+              <button
+                type="button"
+                onClick={() => setIsModifying(false)}
+                className={styles.backBtn}
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
       </div>
     </div>
