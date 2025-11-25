@@ -6,10 +6,18 @@ function Sidebar({ user, isOpen, onClose, onLogout }) {
   const location = useLocation();
   const isActive = (path) => location.pathname === path;
 
+  // UX Decision: Separamos los menús por rol.
+  // El estudiante necesita acceso rápido a su planificación (Calendario).
   const menuItems =
     user.rol === "docente"
-      ? [{ label: "Dashboard", path: "/" }]
-      : [{ label: "Mis Cursos", path: "/" }];
+      ? [
+          { label: "Dashboard", path: "/" },
+          // A futuro: { label: "Calendario Docente", path: "/calendario" }
+        ]
+      : [
+          { label: "Mis Cursos", path: "/" },
+          { label: "Calendario", path: "/calendario" }, // ✨ Nuevo acceso directo
+        ];
 
   return (
     <>

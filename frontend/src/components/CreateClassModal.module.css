@@ -1,0 +1,201 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.content {
+  background: white;
+  padding: 2rem 2.5rem; /* Más padding horizontal */
+  border-radius: 16px;
+  width: 95%; /* Un poco más ancho en móviles */
+  max-width: 550px; /* Un poco más ancho en desktop */
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Alineación vertical centrada */
+  margin-bottom: 2rem; /* Más espacio debajo del header */
+}
+
+.header h2 {
+  margin: 0;
+  color: #1a73e8;
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+}
+
+.header h2 span {
+  margin-right: 10px; /* Espacio entre emoji y texto */
+  font-size: 1.8rem;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 2.2rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1; /* Para alinear mejor */
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.closeBtn:hover {
+  color: #333;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Más espacio entre grupos */
+}
+
+.row {
+  display: flex;
+  gap: 1.5rem; /* Más espacio entre columnas */
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.group label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 0.5rem; /* Espacio debajo de la etiqueta */
+}
+
+/* Estilos comunes para inputs de texto y hora */
+.group input[type="text"],
+.timeInput {
+  padding: 0.9rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  width: 100%; /* Asegura que ocupen todo el ancho del contenedor */
+  box-sizing: border-box; /* Importante para padding/borders */
+  font-family: inherit; /* Para que los inputs de hora usen la misma fuente */
+}
+
+.group input[type="text"]:focus,
+.timeInput:focus {
+  border-color: #1a73e8;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+}
+
+/* Selector de Días */
+.daysContainer {
+  display: flex;
+  gap: 0.8rem; /* Espacio consistente entre días */
+  flex-wrap: wrap;
+}
+
+.dayBtn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dayBtn:hover {
+  background: #f0f4f8;
+  border-color: #cce0ff;
+}
+
+.dayBtn.selected {
+  background: #1a73e8;
+  color: white;
+  border-color: #1a73e8;
+  box-shadow: 0 2px 5px rgba(26, 115, 232, 0.3);
+}
+
+.error {
+  color: #d93025;
+  background: #f8d7da;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end; /* Alineación a la derecha */
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.cancelBtn {
+  background: transparent;
+  border: none;
+  color: #666;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+
+.cancelBtn:hover {
+  color: #333;
+}
+
+.submitBtn {
+  background: #1a73e8;
+  color: white;
+  border: none;
+  padding: 0.9rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.submitBtn:hover {
+  background: #1557b0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.submitBtn:disabled {
+  background: #a0c3ff;
+  cursor: not-allowed;
+  box-shadow: none;
+}

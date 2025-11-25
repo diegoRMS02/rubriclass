@@ -9,6 +9,7 @@ import EvaluationPage from "./pages/EvaluationPage";
 import TeacherGradingPage from "./pages/TeacherGradingPage";
 import StudentClassPage from "./pages/StudentClassPage";
 import TeacherClassPage from "./pages/TeacherClassPage";
+import CalendarPage from "./pages/CalendarPage"; // Importación de la Feature 13
 
 // Importamos el Layout Principal
 import MainLayout from "./layout/MainLayout";
@@ -115,6 +116,20 @@ function App() {
             </MainLayout>
           ) : (
             <Navigate to="/" replace />
+          )
+        }
+      />
+
+      {/* Ruta 7: Calendario Académico (Feature 13) */}
+      <Route
+        path="/calendario"
+        element={
+          user ? (
+            <MainLayout user={user}>
+              <CalendarPage />
+            </MainLayout>
+          ) : (
+            <Navigate to="/login" replace />
           )
         }
       />

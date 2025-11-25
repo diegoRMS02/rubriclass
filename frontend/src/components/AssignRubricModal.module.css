@@ -151,3 +151,21 @@
   font-size: 0.9rem;
   text-align: center;
 }
+/* ... (Mantén tu CSS existente arriba) ... */
+
+.datePickerFullWidth {
+  width: 100%;
+  display: block;
+}
+
+/* Ajuste específico para que el input del DatePicker ocupe todo el espacio */
+.datePickerFullWidth :global(.react-datepicker__input-container) {
+  display: block;
+  width: 100%;
+}
+
+.datePickerFullWidth input {
+  width: 100%;
+  /* Hereda los estilos del input normal si usas la misma clase, 
+     pero aseguramos el ancho aquí */
+}

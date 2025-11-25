@@ -15,13 +15,13 @@ router.get("/", [isAuthenticated, isTeacher], async (req, res) => {
   try {
     const evaluacionesQuery = await db.query(
       `SELECT 
-         e.id, e.nombre_evaluacion, e.tipo_evaluacion, e.fecha_fin, e.tipo_entrega,
-         c.nombre_clase, r.titulo as nombre_rubrica
-       FROM Evaluaciones e
-       JOIN Clases c ON e.clase_id = c.id
-       JOIN Rubricas r ON e.rubrica_id = r.id
-       WHERE c.docente_id = $1 
-       ORDER BY e.fecha_creacion DESC`,
+          e.id, e.nombre_evaluacion, e.tipo_evaluacion, e.fecha_fin, e.tipo_entrega,
+          c.nombre_clase, r.titulo as nombre_rubrica
+        FROM Evaluaciones e
+        JOIN Clases c ON e.clase_id = c.id
+        JOIN Rubricas r ON e.rubrica_id = r.id
+        WHERE c.docente_id = $1 
+        ORDER BY e.fecha_creacion DESC`,
       [docente_id]
     );
     res.json(evaluacionesQuery.rows);
@@ -58,9 +58,9 @@ router.post("/", [isAuthenticated, isTeacher], async (req, res) => {
   try {
     const nuevaEvaluacion = await db.query(
       `INSERT INTO Evaluaciones (
-         nombre_evaluacion, clase_id, rubrica_id, tipo_evaluacion, fecha_fin, tipo_entrega
-       ) 
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+          nombre_evaluacion, clase_id, rubrica_id, tipo_evaluacion, fecha_fin, tipo_entrega
+        ) 
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [
         nombre_evaluacion,
         clase_id,
@@ -125,6 +125,34 @@ router.get("/entregadas", isAuthenticated, async (req, res) => {
     res.json(entregadasQuery.rows);
   } catch (error) {
     console.error("Error al obtener evaluaciones entregadas:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
+
+// --- (NUEVO) 4.5 Ruta para CALENDARIO GLOBAL (Feature 13) ---
+router.get("/calendario", isAuthenticated, async (req, res) => {
+  const usuario_id = req.user.id;
+  try {
+    // Obtenemos TODAS las evaluaciones de las clases donde está inscrito
+    // Y verificamos si ya existe una entrega
+    const query = `
+      SELECT 
+        e.id, 
+        e.nombre_evaluacion, 
+        e.fecha_fin, 
+        c.nombre_clase,
+        CASE WHEN ent.id IS NOT NULL THEN true ELSE false END as entregado
+      FROM Evaluaciones e
+      JOIN Clases c ON e.clase_id = c.id
+      JOIN Inscripciones i ON i.clase_id = c.id
+      LEFT JOIN Entregas ent ON e.id = ent.evaluacion_id AND ent.usuario_id = $1
+      WHERE i.usuario_id = $1
+      ORDER BY e.fecha_fin ASC;
+    `;
+    const calendarioQuery = await db.query(query, [usuario_id]);
+    res.json(calendarioQuery.rows);
+  } catch (error) {
+    console.error("Error al obtener datos del calendario:", error);
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
@@ -398,20 +426,20 @@ router.get(
     try {
       const entregasQuery = await db.query(
         `SELECT 
-         e.id as entrega_id, 
-         e.fecha_entrega, 
-         u.nombre_completo as nombre_estudiante,
-         u.email as email_estudiante,
-         u.id as usuario_id,
-         c.id as calificacion_id,
-         c.nota 
-       FROM Inscripciones i
-       JOIN Usuarios u ON i.usuario_id = u.id
-       JOIN Evaluaciones ev ON ev.id = $1
-       LEFT JOIN Entregas e ON e.usuario_id = u.id AND e.evaluacion_id = $1
-       LEFT JOIN Calificaciones c ON c.entrega_id = e.id
-       WHERE i.clase_id = ev.clase_id
-       ORDER BY u.nombre_completo ASC`,
+          e.id as entrega_id, 
+          e.fecha_entrega, 
+          u.nombre_completo as nombre_estudiante,
+          u.email as email_estudiante,
+          u.id as usuario_id,
+          c.id as calificacion_id,
+          c.nota 
+        FROM Inscripciones i
+        JOIN Usuarios u ON i.usuario_id = u.id
+        JOIN Evaluaciones ev ON ev.id = $1
+        LEFT JOIN Entregas e ON e.usuario_id = u.id AND e.evaluacion_id = $1
+        LEFT JOIN Calificaciones c ON c.entrega_id = e.id
+        WHERE i.clase_id = ev.clase_id
+        ORDER BY u.nombre_completo ASC`,
         [evaluacion_id]
       );
       res.json(entregasQuery.rows);
@@ -463,7 +491,7 @@ router.post(
       for (const [criterioId, nivelId] of Object.entries(detalles)) {
         await db.query(
           `INSERT INTO Detalle_Calificacion (calificacion_id, criterio_id, nivel_id) 
-         VALUES ($1, $2, $3)`,
+          VALUES ($1, $2, $3)`,
           [calificacion_id, criterioId, nivelId]
         );
       }
@@ -558,19 +586,19 @@ router.get("/:id/exportar", [isAuthenticated, isTeacher], async (req, res) => {
 
     const reporteQuery = await db.query(
       `SELECT 
-         u.nombre_completo as "Estudiante",
-         u.email as "Correo",
-         CASE WHEN e.id IS NOT NULL THEN 'Entregado' ELSE 'Pendiente' END as "Estado",
-         TO_CHAR(e.fecha_entrega, 'YYYY-MM-DD HH24:MI') as "Fecha Entrega",
-         c.nota as "Nota Final",
-         c.feedback as "Comentarios"
-       FROM Inscripciones i
-       JOIN Usuarios u ON i.usuario_id = u.id
-       JOIN Evaluaciones ev ON ev.id = $1
-       LEFT JOIN Entregas e ON e.usuario_id = u.id AND e.evaluacion_id = $1
-       LEFT JOIN Calificaciones c ON c.entrega_id = e.id
-       WHERE i.clase_id = ev.clase_id
-       ORDER BY u.nombre_completo ASC`,
+          u.nombre_completo as "Estudiante",
+          u.email as "Correo",
+          CASE WHEN e.id IS NOT NULL THEN 'Entregado' ELSE 'Pendiente' END as "Estado",
+          TO_CHAR(e.fecha_entrega, 'YYYY-MM-DD HH24:MI') as "Fecha Entrega",
+          c.nota as "Nota Final",
+          c.feedback as "Comentarios"
+        FROM Inscripciones i
+        JOIN Usuarios u ON i.usuario_id = u.id
+        JOIN Evaluaciones ev ON ev.id = $1
+        LEFT JOIN Entregas e ON e.usuario_id = u.id AND e.evaluacion_id = $1
+        LEFT JOIN Calificaciones c ON c.entrega_id = e.id
+        WHERE i.clase_id = ev.clase_id
+        ORDER BY u.nombre_completo ASC`,
       [evaluacion_id]
     );
 

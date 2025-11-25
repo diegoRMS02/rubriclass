@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const { isAuthenticated, isTeacher } = require("../middleware/auth");
-const { bucket } = require("../firebase-config"); // <-- Importamos bucket para firmar URLs
+const { bucket } = require("../firebase-config");
 
 // --- Función para generar un código de inscripción aleatorio ---
 function generateCode() {
@@ -32,9 +32,9 @@ router.get("/", [isAuthenticated, isTeacher], async (req, res) => {
   }
 });
 
-// POST /api/clases (Crear clase)
+// POST /api/clases (Crear clase PROFESIONAL)
 router.post("/", [isAuthenticated, isTeacher], async (req, res) => {
-  const { nombre_clase } = req.body;
+  const { nombre_clase, seccion, dias, hora_inicio, hora_fin } = req.body;
   const docente_id = req.user.id;
 
   if (!nombre_clase) {
@@ -46,9 +46,26 @@ router.post("/", [isAuthenticated, isTeacher], async (req, res) => {
   try {
     const codigo_inscripcion = generateCode();
 
+    // Insertamos los nuevos campos (seccion, dias, horarios)
     const nuevaClaseQuery = await db.query(
-      "INSERT INTO Clases (nombre_clase, codigo_inscripcion, docente_id) VALUES ($1, $2, $3) RETURNING *",
-      [nombre_clase, codigo_inscripcion, docente_id]
+      `INSERT INTO Clases (
+          nombre_clase, 
+          codigo_inscripcion, 
+          docente_id,
+          seccion,
+          dias,
+          hora_inicio,
+          hora_fin
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [
+        nombre_clase,
+        codigo_inscripcion,
+        docente_id,
+        seccion || "", // Puede ser vacío
+        dias || "", // Puede ser vacío
+        hora_inicio || null, // Puede ser null
+        hora_fin || null, // Puede ser null
+      ]
     );
 
     res.status(201).json(nuevaClaseQuery.rows[0]);
@@ -70,7 +87,7 @@ router.get("/inscripciones", isAuthenticated, async (req, res) => {
 
   try {
     const inscripcionesQuery = await db.query(
-      `SELECT c.id, c.nombre_clase, c.codigo_inscripcion, u.nombre_completo as nombre_docente
+      `SELECT c.id, c.nombre_clase, c.codigo_inscripcion, c.seccion, c.dias, c.hora_inicio, c.hora_fin, u.nombre_completo as nombre_docente
        FROM Clases c
        JOIN Inscripciones i ON c.id = i.clase_id
        JOIN Usuarios u ON c.docente_id = u.id
@@ -139,7 +156,6 @@ router.post("/inscribir", isAuthenticated, async (req, res) => {
 });
 
 // --- NUEVA RUTA: GET /api/clases/:id (Detalle básico para el estudiante) ---
-// Usada por la página StudentClassPage para mostrar el título y docente
 router.get("/:id", isAuthenticated, async (req, res) => {
   const { id } = req.params;
   const { id: usuario_id, rol } = req.user;
@@ -147,9 +163,7 @@ router.get("/:id", isAuthenticated, async (req, res) => {
   try {
     let claseQuery;
 
-    // Verificación de seguridad según el rol
     if (rol === "docente") {
-      // Si es docente, verificar que sea SU clase
       claseQuery = await db.query(
         `SELECT c.*, u.nombre_completo as nombre_docente 
          FROM Clases c
@@ -158,7 +172,6 @@ router.get("/:id", isAuthenticated, async (req, res) => {
         [id, usuario_id]
       );
     } else {
-      // Si es estudiante, verificar que esté INSCRITO
       claseQuery = await db.query(
         `SELECT c.*, u.nombre_completo as nombre_docente 
          FROM Clases c
@@ -182,17 +195,11 @@ router.get("/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// --- NUEVA RUTA: GET /api/clases/:id/contenido (Módulos y Recursos) ---
-// Esta ruta devuelve TODA la estructura del curso (semanas y archivos)
+// --- NUEVA RUTA: GET /api/clases/:id/contenido ---
 router.get("/:id/contenido", isAuthenticated, async (req, res) => {
   const { id: clase_id } = req.params;
-  const { id: usuario_id, rol } = req.user;
 
   try {
-    // 1. Verificación de Seguridad (Reutilizamos la lógica anterior)
-    // (Omitimos la consulta detallada aquí por brevedad, asumimos que si llegan aquí ya pasaron por /:id en el frontend
-    // pero en producción deberíamos verificar de nuevo)
-
     // 2. Obtener Módulos
     const modulosQuery = await db.query(
       "SELECT * FROM Modulos WHERE clase_id = $1 ORDER BY orden ASC, id ASC",
@@ -200,7 +207,7 @@ router.get("/:id/contenido", isAuthenticated, async (req, res) => {
     );
     const modulos = modulosQuery.rows;
 
-    // 3. Obtener Recursos de esos módulos
+    // 3. Obtener Recursos
     const modulosIds = modulos.map((m) => m.id);
 
     let recursos = [];
@@ -212,35 +219,32 @@ router.get("/:id/contenido", isAuthenticated, async (req, res) => {
       recursos = recursosQuery.rows;
     }
 
-    // 4. Generar URLs firmadas para los archivos (solo duran 1 hora)
+    // 4. URLs firmadas
     const options = {
       version: "v4",
       action: "read",
-      expires: Date.now() + 60 * 60 * 1000, // 1 hora
+      expires: Date.now() + 60 * 60 * 1000,
     };
 
     const recursosProcesados = await Promise.all(
       recursos.map(async (rec) => {
         if (rec.tipo === "archivo") {
           try {
-            // La URL en la BD es la ruta interna (ej: recursos/abc.pdf)
-            // Generamos una URL pública temporal
             const [signedUrl] = await bucket
               .file(rec.url)
               .getSignedUrl(options);
             return { ...rec, url_publica: signedUrl };
           } catch (err) {
-            console.error("Error firmando URL para recurso:", rec.id, err);
+            console.error("Error firmando URL:", rec.id, err);
             return { ...rec, url_publica: null, error: "No disponible" };
           }
         } else {
-          // Si es un enlace externo, la URL pública es la misma
           return { ...rec, url_publica: rec.url };
         }
       })
     );
 
-    // 5. Estructurar la respuesta (Anidar recursos dentro de módulos)
+    // 5. Estructurar respuesta
     const contenido = modulos.map((modulo) => ({
       ...modulo,
       recursos: recursosProcesados.filter((r) => r.modulo_id === modulo.id),

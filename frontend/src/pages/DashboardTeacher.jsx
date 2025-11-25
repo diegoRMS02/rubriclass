@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom"; // Importamos Link
+import { Link } from "react-router-dom";
 import styles from "./DashboardTeacher.module.css";
-import CreateClassForm from "../components/CreateClassForm";
+
+// IMPORTAMOS EL NUEVO MODAL
+import CreateClassModal from "../components/CreateClassModal";
+
 import UploadRubricForm from "../components/UploadRubricForm";
 import RubricList from "../components/RubricList";
 import AssignRubricModal from "../components/AssignRubricModal";
@@ -12,7 +15,11 @@ function DashboardTeacher({ user }) {
   const [classes, setClasses] = useState([]);
   const [rubrics, setRubrics] = useState([]);
   const [evaluations, setEvaluations] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Estados para modales
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
+
   const [selectedClass, setSelectedClass] = useState(null);
 
   const fetchData = useCallback(async () => {
@@ -34,15 +41,20 @@ function DashboardTeacher({ user }) {
     fetchData();
   }, [fetchData]);
 
-  const handleOpenModal = (clase) => {
+  const handleOpenAssignModal = (clase) => {
     setSelectedClass(clase);
-    setIsModalOpen(true);
+    setIsAssignModalOpen(true);
   };
 
-  const handleSuccess = () => {
+  const handleAssignSuccess = () => {
     alert("¡Evaluación asignada!");
     fetchData();
-    setIsModalOpen(false);
+    setIsAssignModalOpen(false);
+  };
+
+  const handleCreateClassSuccess = () => {
+    fetchData(); // Recargar lista de clases
+    setIsCreateClassModalOpen(false); // Cerrar modal
   };
 
   return (
@@ -51,38 +63,84 @@ function DashboardTeacher({ user }) {
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>Mis Clases</h2>
+            {/* BOTÓN PARA ABRIR EL NUEVO MODAL */}
+            <button
+              className={styles.assignBtn} // Reusamos estilo o crea uno nuevo
+              style={{ background: "#28a745" }}
+              onClick={() => setIsCreateClassModalOpen(true)}
+            >
+              + Nueva Clase
+            </button>
           </div>
-
-          <CreateClassForm
-            onClassCreated={(c) => setClasses([c, ...classes])}
-          />
 
           <div className={styles.classesGrid}>
             {classes.map((clase) => (
               <div key={clase.id} className={styles.classCard}>
-                {/* ENLACE A LA GESTIÓN DE LA CLASE */}
                 <Link
                   to={`/docente/clase/${clase.id}`}
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
-                  <span
-                    className={styles.className}
-                    style={{ cursor: "pointer" }}
-                  >
-                    {clase.nombre_clase}
-                  </span>
+                  <div style={{ cursor: "pointer" }}>
+                    <span className={styles.className}>
+                      {clase.nombre_clase}
+                      {/* Mostrar Sección si existe */}
+                      {clase.seccion && (
+                        <span
+                          style={{
+                            fontSize: "0.8em",
+                            color: "#666",
+                            marginLeft: "8px",
+                          }}
+                        >
+                          ({clase.seccion})
+                        </span>
+                      )}
+                    </span>
+
+                    {/* Mostrar Horario si existe */}
+                    {(clase.dias || clase.hora_inicio) && (
+                      <div
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "#555",
+                          marginTop: "5px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        📅 {clase.dias && <span>{clase.dias}</span>}
+                        {clase.hora_inicio && (
+                          <span>
+                            • {clase.hora_inicio.slice(0, 5)} -{" "}
+                            {clase.hora_fin?.slice(0, 5)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </Link>
 
-                <span className={styles.classCode}>
-                  Código: {clase.codigo_inscripcion}
-                </span>
-
-                <button
-                  className={styles.assignBtn}
-                  onClick={() => handleOpenModal(clase)}
+                <div
+                  style={{
+                    marginTop: "10px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
-                  Asignar Evaluación
-                </button>
+                  <span className={styles.classCode}>
+                    Cód: {clase.codigo_inscripcion}
+                  </span>
+
+                  <button
+                    className={styles.assignBtn}
+                    onClick={() => handleOpenAssignModal(clase)}
+                    style={{ padding: "5px 10px", fontSize: "0.8rem" }}
+                  >
+                    Asignar Eval.
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -104,12 +162,21 @@ function DashboardTeacher({ user }) {
         </div>
       </div>
 
-      {isModalOpen && (
+      {/* MODAL DE ASIGNAR EVALUACIÓN */}
+      {isAssignModalOpen && (
         <AssignRubricModal
           clase={selectedClass}
           rubricas={rubrics}
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={handleSuccess}
+          onClose={() => setIsAssignModalOpen(false)}
+          onSuccess={handleAssignSuccess}
+        />
+      )}
+
+      {/* MODAL DE CREAR CLASE (NUEVO) */}
+      {isCreateClassModalOpen && (
+        <CreateClassModal
+          onClose={() => setIsCreateClassModalOpen(false)}
+          onSuccess={handleCreateClassSuccess}
         />
       )}
     </div>
