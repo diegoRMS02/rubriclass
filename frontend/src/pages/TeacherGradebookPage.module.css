@@ -1,0 +1,105 @@
+.container {
+  padding: 2rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  font-family: "Inter", sans-serif;
+}
+
+.header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  color: #202124;
+  margin: 0;
+}
+
+.tableWrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow-x: auto; /* Scroll horizontal si hay muchas tareas */
+  border: 1px solid #e0e0e0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.table th,
+.table td {
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #5f6368;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Columna fija del estudiante a la izquierda */
+.colStudent {
+  text-align: left !important;
+  position: sticky;
+  left: 0;
+  background-color: white; /* Tapar el scroll al moverse */
+  z-index: 2;
+  border-right: 2px solid #f1f3f4;
+  min-width: 200px;
+}
+
+.table th.colStudent {
+  background-color: #f8f9fa;
+  z-index: 3;
+}
+
+.studentName {
+  display: block;
+  font-weight: 600;
+  color: #333;
+}
+
+.studentEmail {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Celdas de notas */
+.gradeCell {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.passing {
+  color: #34a853;
+} /* Verde */
+.failing {
+  color: #ea4335;
+} /* Rojo */
+.empty {
+  color: #ccc;
+  font-style: italic;
+}
+
+.average {
+  font-weight: 800;
+  color: #1a73e8;
+}
+
+.backLink {
+  text-decoration: none;
+  color: #1a73e8;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}

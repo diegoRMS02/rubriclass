@@ -1,0 +1,102 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: 400px; /* Scroll si hay muchas */
+  overflow-y: auto;
+  padding-right: 5px; /* Espacio para el scrollbar */
+}
+
+/* Scrollbar bonito */
+.container::-webkit-scrollbar {
+  width: 6px;
+}
+.container::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
+}
+
+.rubricCard {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start; /* Alineación arriba */
+  gap: 1rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.rubricCard:hover {
+  border-color: #1a73e8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateX(2px);
+}
+
+.iconWrapper {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.description {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Muestra máx 2 líneas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  color: #dadce0; /* Gris claro por defecto */
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 5px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.rubricCard:hover .deleteBtn {
+  color: #ea4335; /* Rojo al hacer hover en la tarjeta */
+}
+
+.deleteBtn:hover {
+  background-color: #fce8e6; /* Fondo rojo suave */
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+  font-size: 0.9rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
+}

@@ -1,37 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { format } from "date-fns";
-import { es } from "date-fns/locale/es";
-// Importamos el nuevo modal que ya creaste
+import moment from "moment";
+import "moment/locale/es";
+import styles from "./TeacherGradingPage.module.css";
 import GradingModal from "../components/GradingModal";
 
-function TeacherGradingPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+moment.locale("es");
 
-  const [entregas, setEntregas] = useState([]);
-  const [evaluacionInfo, setEvaluacionInfo] = useState(null);
-  const [rubrica, setRubrica] = useState([]);
+function TeacherGradingPage() {
+  const { id: evaluationId } = useParams();
+  const [evaluationInfo, setEvaluationInfo] = useState(null);
+  const [rubric, setRubric] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Estados para controlar el Modal
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Función para cargar datos
   const fetchData = async () => {
+    setLoading(true);
     try {
-      const evalRes = await axios.get(`/api/evaluaciones/${id}`);
-      setEvaluacionInfo(evalRes.data.evaluacion);
-      setRubrica(evalRes.data.rubrica);
+      const infoRes = await axios.get(`/api/evaluaciones/${evaluationId}`);
+      setEvaluationInfo(infoRes.data.evaluacion);
+      setRubric(infoRes.data.rubrica || []);
 
-      const entregasRes = await axios.get(
-        `/api/evaluaciones/${id}/entregas_docente`
+      const studentsRes = await axios.get(
+        `/api/evaluaciones/${evaluationId}/entregas_docente`
       );
-      setEntregas(entregasRes.data);
+      setStudents(studentsRes.data);
     } catch (error) {
-      console.error("Error al cargar datos:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -39,147 +37,179 @@ function TeacherGradingPage() {
 
   useEffect(() => {
     fetchData();
-  }, [id]);
+  }, [evaluationId]);
 
-  // --- FUNCIONES DEL MODAL ---
-  const handleOpenGradeModal = (student) => {
+  const handleRateClick = (student) => {
     setSelectedStudent(student);
-    setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
+  const handleRateSuccess = () => {
+    alert("¡Calificación guardada!");
     setSelectedStudent(null);
-    setIsModalOpen(false);
-  };
-
-  const handleGradeSuccess = () => {
-    alert("Calificación guardada correctamente");
-    handleCloseModal();
     fetchData();
   };
 
-  // --- NUEVA FUNCIÓN: EXPORTAR NOTAS ---
-  const handleExport = async () => {
-    try {
-      const response = await axios.get(`/api/evaluaciones/${id}/exportar`, {
-        responseType: "blob", // Importante para recibir archivos
-      });
+  const getStatusBadge = (student) => {
+    if (student.calificacion_id)
+      return { label: "Calificada", style: styles.statusGraded };
+    if (student.entrega_id)
+      return { label: "Entregada", style: styles.statusSubmitted };
+    return { label: "Pendiente", style: styles.statusPending };
+  };
 
-      // Crear un enlace invisible para descargar el archivo
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      // El nombre del archivo viene del backend o usamos uno por defecto
-      link.setAttribute(
-        "download",
-        `Reporte_Notas_${evaluacionInfo.nombre_evaluacion}.xlsx`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      console.error("Error al exportar:", error);
-      alert("Error al exportar las notas.");
+  const getSubmissionAction = (student, tipoEntrega) => {
+    if (
+      !student.entrega_id ||
+      (!student.enlace_url &&
+        !student.url_para_ver &&
+        tipoEntrega !== "archivo")
+    ) {
+      return { label: "Sin Entrega", link: null, disabled: true };
     }
+
+    const url = student.url_para_ver || student.enlace_url;
+
+    if (tipoEntrega === "archivo")
+      return { label: "Ver Archivo", link: url, disabled: false };
+    if (tipoEntrega === "enlace")
+      return { label: "Abrir Enlace", link: url, disabled: false };
+
+    return { label: "Solo Rúbrica", link: null, disabled: true };
   };
 
   if (loading)
-    return <div className="p-20">Cargando panel de calificación...</div>;
-  if (!evaluacionInfo)
-    return <div className="p-20">Evaluación no encontrada.</div>;
+    return (
+      <div
+        className={styles.container}
+        style={{ textAlign: "center", paddingTop: "50px" }}
+      >
+        Cargando...
+      </div>
+    );
+  if (!evaluationInfo)
+    return <div className={styles.container}>Error: No encontrada</div>;
 
   return (
-    <div className="grading-container">
-      <div className="grading-header">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
-          <div>
-            <button onClick={() => navigate("/")} className="back-btn mb-4">
-              ← Volver al Dashboard
-            </button>
-            <h1>Calificar: {evaluacionInfo.nombre_evaluacion}</h1>
-            <p className="text-gray">
-              Tipo: <strong>{evaluacionInfo.tipo_evaluacion}</strong> | Entrega:{" "}
-              <strong>{evaluacionInfo.tipo_entrega}</strong>
-            </p>
-          </div>
-
-          {/* BOTÓN DE EXPORTAR */}
-          <button onClick={handleExport} className="export-btn">
-            📊 Exportar Notas
-          </button>
+    <div className={styles.container}>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.title}>
+          Calificar: {evaluationInfo.nombre_evaluacion}
+        </h1>
+        <p className={styles.metadata}>
+          Clase: <strong>{evaluationInfo.nombre_clase}</strong> | Tipo:{" "}
+          {evaluationInfo.tipo_evaluacion}
+        </p>
+        <div style={{ marginTop: "1rem" }}>
+          <Link
+            to="/dashboard"
+            style={{ textDecoration: "none", color: "#1a73e8" }}
+          >
+            ← Volver al Dashboard
+          </Link>
         </div>
       </div>
 
-      <div className="students-table-container">
-        <table className="students-table">
-          <thead>
-            <tr>
-              <th>Estudiante</th>
-              <th>Estado</th>
-              <th>Fecha Entrega</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entregas.map((item) => (
-              <tr key={item.usuario_id}>
-                <td>
-                  <div className="student-name">{item.nombre_estudiante}</div>
-                  <div className="student-email">{item.email_estudiante}</div>
-                </td>
-                <td>
-                  {item.entrega_id ? (
-                    <span className="badge success">Entregado</span>
-                  ) : (
-                    <span className="badge pending">Pendiente</span>
-                  )}
-                  {item.calificacion_id && (
-                    <span className="badge graded">Calificado</span>
-                  )}
-                </td>
-                <td>
-                  {item.fecha_entrega
-                    ? format(new Date(item.fecha_entrega), "Pp", { locale: es })
-                    : "-"}
-                </td>
-                <td>
-                  {item.entrega_id ? (
-                    <button
-                      className="grade-btn"
-                      onClick={() => handleOpenGradeModal(item)}
-                    >
-                      {item.calificacion_id ? "Editar Nota" : "Calificar"}
-                    </button>
-                  ) : (
-                    <span className="text-small text-gray">Sin entrega</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {entregas.length === 0 && (
-              <tr>
-                <td colSpan="4" className="text-center p-4">
-                  No hay estudiantes inscritos en esta clase.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className={styles.studentListCard}>
+        <div className={styles.tableHeader}>
+          <span>Estudiante</span>
+          <span>Estado</span>
+          <span>Fecha Entrega</span>
+          <span>Nota</span>
+          <span style={{ textAlign: "center" }}>Ver Entrega</span>
+          <span style={{ textAlign: "center" }}>Calificación</span>
+        </div>
+
+        {students.map((student) => {
+          const status = getStatusBadge(student);
+          const submissionAction = getSubmissionAction(
+            student,
+            evaluationInfo.tipo_entrega
+          );
+
+          const fechaEntrega = student.fecha_entrega ? (
+            moment(student.fecha_entrega).format("D MMM, HH:mm")
+          ) : (
+            <span className={styles.noSubmissionText}>Sin entrega</span>
+          );
+
+          const notaFloat = parseFloat(student.nota);
+          const notaDisplay =
+            student.nota !== null
+              ? isNaN(notaFloat)
+                ? student.nota
+                : notaFloat.toFixed(1)
+              : student.calificacion_id
+              ? "--"
+              : "N/A";
+
+          const canRate = !!student.entrega_id;
+
+          return (
+            <div key={student.usuario_id} className={styles.studentRow}>
+              <div className={styles.studentInfo}>
+                <span className={styles.studentName}>
+                  {student.nombre_estudiante}
+                </span>
+                <span className={styles.studentEmail}>
+                  {student.email_estudiante}
+                </span>
+              </div>
+              <span className={status.style}>{status.label}</span>
+              <span>{fechaEntrega}</span>
+              <strong
+                style={{ color: student.calificacion_id ? "#34a853" : "#666" }}
+              >
+                {notaDisplay}
+              </strong>
+
+              {/* Botón Ver Archivo (Estilo Secundario) */}
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                {submissionAction.link ? (
+                  <a
+                    href={submissionAction.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`${styles.actionsBtn} ${styles.btnSecondary}`}
+                  >
+                    {submissionAction.label}
+                  </a>
+                ) : (
+                  <span
+                    className={`${styles.actionsBtn} ${styles.disabledBtn}`}
+                  >
+                    {submissionAction.label}
+                  </span>
+                )}
+              </div>
+
+              {/* Botón Calificar (Estilo Primario) */}
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                {canRate ? (
+                  <button
+                    onClick={() => handleRateClick(student)}
+                    className={`${styles.actionsBtn} ${styles.btnPrimary}`}
+                  >
+                    {student.calificacion_id ? "Editar Nota" : "Calificar"}
+                  </button>
+                ) : (
+                  <span
+                    className={`${styles.actionsBtn} ${styles.disabledBtn}`}
+                  >
+                    N/A
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {isModalOpen && selectedStudent && (
+      {selectedStudent && (
         <GradingModal
           student={selectedStudent}
-          evaluationId={id}
-          rubric={rubrica}
-          onClose={handleCloseModal}
-          onSuccess={handleGradeSuccess}
+          rubric={rubric}
+          onClose={() => setSelectedStudent(null)}
+          onSuccess={handleRateSuccess}
         />
       )}
     </div>

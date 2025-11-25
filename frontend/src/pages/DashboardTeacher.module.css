@@ -1,17 +1,28 @@
-/* Grid Principal */
+/* DashboardTeacher.module.css */
+
 .gridContainer {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* 2 partes para contenido, 1 para lateral */
+  grid-template-columns: 3fr 1fr; /* 3 partes contenido, 1 parte sidebar derecha */
+  gap: 2rem;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 60px);
+}
+
+.mainColumn,
+.sideColumn {
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
 }
 
-/* Tarjetas Generales */
+/* --- TARJETAS GENERALES (Contenedores Blancos) --- */
 .card {
-  background: var(--secondary);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
-  margin-bottom: 2rem;
+  border: 1px solid #e0e0e0;
 }
 
 .cardHeader {
@@ -19,70 +30,171 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f3f4;
+  padding-bottom: 1rem;
 }
 
 .cardTitle {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-main);
+  color: #202124;
+  margin: 0;
 }
 
-/* Lista de Clases (Grid interno) */
+/* Botón "Nueva Clase" (Ahora más discreto y elegante) */
+.createClassBtn {
+  background-color: #1a73e8; /* Azul corporativo */
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(26, 115, 232, 0.2);
+}
+
+.createClassBtn:hover {
+  background-color: #1557b0;
+  transform: translateY(-1px);
+}
+
+/* --- GRID DE CLASES (Las tarjetas de cursos) --- */
 .classesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
 }
 
 .classCard {
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
-  transition: transform 0.2s;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 0; /* Padding controlado internamente */
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Para que la barra de color no se salga */
+  position: relative;
 }
+
 .classCard:hover {
-  transform: translateY(-2px);
-  border-color: var(--primary);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: #d2e3fc;
+}
+
+/* Barra de color superior en la tarjeta */
+.colorBar {
+  height: 6px;
+  width: 100%;
+}
+
+.cardContent {
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-grow: 1;
 }
 
 .className {
-  font-weight: 600;
   font-size: 1.1rem;
+  font-weight: 700;
+  color: #3c4043;
+  text-decoration: none;
   display: block;
-  margin-bottom: 0.5rem;
 }
+
+.className:hover {
+  color: #1a73e8;
+}
+
+.classMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #5f6368;
+  margin-bottom: 1rem;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.classFooter {
+  padding: 1rem 1.2rem;
+  background-color: #f8f9fa;
+  border-top: 1px solid #f1f3f4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .classCode {
-  font-family: monospace;
-  background: #e5e7eb;
+  font-size: 0.75rem;
+  color: #80868b;
+  background: #e8eaed;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-family: monospace;
 }
 
-.assignBtn {
-  width: 100%;
-  margin-top: 1rem;
-  padding: 8px;
-  background: var(--primary);
-  color: white;
-  border: none;
+/* Acciones en el footer de la tarjeta */
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.iconBtn {
+  background: white;
+  border: 1px solid #dadce0;
   border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-weight: 500;
-}
-.assignBtn:hover {
-  background: var(--primary-hover);
+  color: #5f6368;
+  transition: all 0.2s;
 }
 
-/* Lista de Evaluaciones (Lateral) */
-.evalList {
-  list-style: none;
+.iconBtn:hover {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  border-color: #1a73e8;
 }
-.evalItem {
-  padding: 10px;
-  border-bottom: 1px solid var(--border);
+
+/* Botón principal de acción (Ver Notas) */
+.gradebookBtn {
+  background-color: white;
+  color: #1a73e8;
+  border: 1px solid #1a73e8;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-block;
 }
-.evalItem:last-child {
-  border-bottom: none;
+
+.gradebookBtn:hover {
+  background-color: #e8f0fe;
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+  .gridContainer {
+    grid-template-columns: 1fr;
+  }
 }

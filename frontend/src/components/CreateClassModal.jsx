@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import styles from "./CreateClassModal.module.css";
 
@@ -11,7 +11,7 @@ const DAYS_OPTIONS = [
   { label: "Sáb", value: "Sábado" },
 ];
 
-function CreateClassModal({ onClose, onSuccess }) {
+function CreateClassModal({ onClose, onSuccess, classToEdit = null }) {
   const [formData, setFormData] = useState({
     nombre_clase: "",
     seccion: "",
@@ -21,6 +21,21 @@ function CreateClassModal({ onClose, onSuccess }) {
   const [selectedDays, setSelectedDays] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Cargar datos si es edición
+  useEffect(() => {
+    if (classToEdit) {
+      setFormData({
+        nombre_clase: classToEdit.nombre_clase || "",
+        seccion: classToEdit.seccion || "",
+        hora_inicio: classToEdit.hora_inicio || "",
+        hora_fin: classToEdit.hora_fin || "",
+      });
+      if (classToEdit.dias) {
+        setSelectedDays(classToEdit.dias.split(", ").filter(Boolean));
+      }
+    }
+  }, [classToEdit]);
 
   const handleDayToggle = (dayValue) => {
     if (selectedDays.includes(dayValue)) {
@@ -40,15 +55,30 @@ function CreateClassModal({ onClose, onSuccess }) {
     setError("");
 
     try {
+      // PREPARAR DATOS
       const diasString = selectedDays.join(", ");
-      await axios.post("/api/clases", {
-        ...formData,
-        dias: diasString,
-      });
+      const payload = { ...formData, dias: diasString };
+
+      // ENVIAR PETICIÓN (Sin headers manuales, Axios usa cookies automáticamente)
+      if (classToEdit) {
+        // MODO EDICIÓN
+        await axios.put(`/api/clases/${classToEdit.id}`, payload);
+      } else {
+        // MODO CREACIÓN
+        await axios.post("/api/clases", payload);
+      }
+
       onSuccess();
     } catch (err) {
-      setError("Error al crear la clase. Intenta de nuevo.");
       console.error(err);
+      if (err.response && err.response.status === 401) {
+        // Si da 401 es porque la sesión en el servidor caducó
+        setError(
+          "Tu sesión expiró. Por favor recarga la página e inicia sesión."
+        );
+      } else {
+        setError(err.response?.data?.message || "Error al guardar la clase.");
+      }
     } finally {
       setLoading(false);
     }
@@ -58,12 +88,11 @@ function CreateClassModal({ onClose, onSuccess }) {
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.content} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          {/* Emoji cambiado a libros 📚 y envuelto en span para alineación */}
           <h2>
             <span role="img" aria-label="libros">
               📚
             </span>{" "}
-            Crear Nueva Clase
+            {classToEdit ? "Editar Clase" : "Crear Nueva Clase"}
           </h2>
           <button className={styles.closeBtn} onClick={onClose}>
             &times;
@@ -71,7 +100,6 @@ function CreateClassModal({ onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          {/* Fila 1: Nombre y Sección */}
           <div className={styles.row}>
             <div className={styles.group} style={{ flex: 2 }}>
               <label htmlFor="nombre_clase">Nombre del Curso</label>
@@ -83,7 +111,7 @@ function CreateClassModal({ onClose, onSuccess }) {
                 onChange={(e) =>
                   setFormData({ ...formData, nombre_clase: e.target.value })
                 }
-                autoFocus
+                autoFocus={!classToEdit}
               />
             </div>
             <div className={styles.group} style={{ flex: 1 }}>
@@ -100,7 +128,6 @@ function CreateClassModal({ onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* Fila 2: Días de Clase */}
           <div className={styles.group}>
             <label>Días de Clase</label>
             <div className={styles.daysContainer}>
@@ -119,7 +146,6 @@ function CreateClassModal({ onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* Fila 3: Horario */}
           <div className={styles.row}>
             <div className={styles.group}>
               <label htmlFor="hora_inicio">Hora Inicio</label>
@@ -149,7 +175,6 @@ function CreateClassModal({ onClose, onSuccess }) {
 
           {error && <div className={styles.error}>{error}</div>}
 
-          {/* Botones de Acción */}
           <div className={styles.actions}>
             <button
               type="button"
@@ -163,7 +188,11 @@ function CreateClassModal({ onClose, onSuccess }) {
               disabled={loading}
               className={styles.submitBtn}
             >
-              {loading ? "Creando..." : "Guardar Clase"}
+              {loading
+                ? "Guardando..."
+                : classToEdit
+                ? "Actualizar"
+                : "Guardar Clase"}
             </button>
           </div>
         </form>

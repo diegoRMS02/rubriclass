@@ -3,13 +3,25 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import styles from "./DashboardTeacher.module.css";
 
-// IMPORTAMOS EL NUEVO MODAL
+// Componentes
 import CreateClassModal from "../components/CreateClassModal";
-
 import UploadRubricForm from "../components/UploadRubricForm";
 import RubricList from "../components/RubricList";
 import AssignRubricModal from "../components/AssignRubricModal";
 import EvaluationList from "../components/EvaluationList";
+
+const getClassColor = (id) => {
+  const colors = [
+    "#4285F4",
+    "#34A853",
+    "#FBBC05",
+    "#EA4335",
+    "#673AB7",
+    "#E91E63",
+    "#009688",
+  ];
+  return colors[id % colors.length] || colors[0];
+};
 
 function DashboardTeacher({ user }) {
   const [classes, setClasses] = useState([]);
@@ -20,10 +32,14 @@ function DashboardTeacher({ user }) {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
 
-  const [selectedClass, setSelectedClass] = useState(null);
+  // Estados para EDICIÓN
+  const [classToEdit, setClassToEdit] = useState(null);
+  const [evaluationToEdit, setEvaluationToEdit] = useState(null);
+  const [selectedClassForAssign, setSelectedClassForAssign] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
+      // La ruta /api/clases ahora devuelve student_count
       const [classesRes, rubricsRes, evaluationsRes] = await Promise.all([
         axios.get("/api/clases"),
         axios.get("/api/rubricas"),
@@ -41,114 +57,174 @@ function DashboardTeacher({ user }) {
     fetchData();
   }, [fetchData]);
 
+  // --- HANDLERS PARA CLASES ---
+  const handleCreateClassClick = () => {
+    setClassToEdit(null);
+    setIsCreateClassModalOpen(true);
+  };
+
+  const handleEditClassClick = (clase) => {
+    setClassToEdit(clase);
+    setIsCreateClassModalOpen(true);
+  };
+
+  const handleClassModalSuccess = () => {
+    fetchData();
+    setIsCreateClassModalOpen(false);
+    setClassToEdit(null);
+  };
+
+  // --- HANDLERS PARA EVALUACIONES ---
   const handleOpenAssignModal = (clase) => {
-    setSelectedClass(clase);
+    setSelectedClassForAssign(clase);
+    setEvaluationToEdit(null);
+    setIsAssignModalOpen(true);
+  };
+
+  const handleEditEvaluation = (evaluation) => {
+    setEvaluationToEdit(evaluation);
+    setSelectedClassForAssign(null);
     setIsAssignModalOpen(true);
   };
 
   const handleAssignSuccess = () => {
-    alert("¡Evaluación asignada!");
+    alert(
+      evaluationToEdit ? "¡Evaluación actualizada!" : "¡Evaluación asignada!"
+    );
     fetchData();
     setIsAssignModalOpen(false);
-  };
-
-  const handleCreateClassSuccess = () => {
-    fetchData(); // Recargar lista de clases
-    setIsCreateClassModalOpen(false); // Cerrar modal
+    setEvaluationToEdit(null);
   };
 
   return (
     <div className={styles.gridContainer}>
       <div className={styles.mainColumn}>
+        {/* SECCIÓN DE CLASES */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>Mis Clases</h2>
-            {/* BOTÓN PARA ABRIR EL NUEVO MODAL */}
             <button
-              className={styles.assignBtn} // Reusamos estilo o crea uno nuevo
-              style={{ background: "#28a745" }}
-              onClick={() => setIsCreateClassModalOpen(true)}
+              className={styles.createClassBtn}
+              onClick={handleCreateClassClick}
             >
-              + Nueva Clase
+              <span>+</span> Nueva Clase
             </button>
           </div>
 
-          <div className={styles.classesGrid}>
-            {classes.map((clase) => (
-              <div key={clase.id} className={styles.classCard}>
-                <Link
-                  to={`/docente/clase/${clase.id}`}
-                  style={{ textDecoration: "none", color: "inherit" }}
-                >
-                  <div style={{ cursor: "pointer" }}>
-                    <span className={styles.className}>
-                      {clase.nombre_clase}
-                      {/* Mostrar Sección si existe */}
-                      {clase.seccion && (
-                        <span
-                          style={{
-                            fontSize: "0.8em",
-                            color: "#666",
-                            marginLeft: "8px",
-                          }}
-                        >
-                          ({clase.seccion})
-                        </span>
-                      )}
-                    </span>
+          {classes.length === 0 ? (
+            <p style={{ color: "#666", fontStyle: "italic" }}>
+              No has creado ninguna clase aún.
+            </p>
+          ) : (
+            <div className={styles.classesGrid}>
+              {classes.map((clase) => {
+                const color = getClassColor(clase.id);
+                return (
+                  <div key={clase.id} className={styles.classCard}>
+                    <div
+                      className={styles.colorBar}
+                      style={{ backgroundColor: color }}
+                    ></div>
 
-                    {/* Mostrar Horario si existe */}
-                    {(clase.dias || clase.hora_inicio) && (
+                    <div className={styles.cardContent}>
+                      {/* Cabecera de la tarjeta con botón EDITAR */}
                       <div
                         style={{
-                          fontSize: "0.85rem",
-                          color: "#555",
-                          marginTop: "5px",
                           display: "flex",
-                          alignItems: "center",
-                          gap: "5px",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
                         }}
                       >
-                        📅 {clase.dias && <span>{clase.dias}</span>}
-                        {clase.hora_inicio && (
-                          <span>
-                            • {clase.hora_inicio.slice(0, 5)} -{" "}
-                            {clase.hora_fin?.slice(0, 5)}
-                          </span>
-                        )}
+                        <Link
+                          to={`/docente/clase/${clase.id}`}
+                          className={styles.className}
+                        >
+                          {clase.nombre_clase}
+                        </Link>
+                        <button
+                          className={styles.iconBtn}
+                          onClick={() => handleEditClassClick(clase)}
+                          title="Editar Clase"
+                          style={{
+                            width: "24px",
+                            height: "24px",
+                            fontSize: "0.8rem",
+                            border: "none",
+                          }}
+                        >
+                          ✏️
+                        </button>
                       </div>
-                    )}
+
+                      <div className={styles.classMeta}>
+                        {clase.seccion && (
+                          <div className={styles.metaRow}>
+                            <span>
+                              🏷️ Sección: <strong>{clase.seccion}</strong>
+                            </span>
+                          </div>
+                        )}
+                        {(clase.dias || clase.hora_inicio) && (
+                          <div className={styles.metaRow}>
+                            <span>
+                              ⏰ {clase.dias}{" "}
+                              {clase.hora_inicio
+                                ? `(${clase.hora_inicio.slice(0, 5)})`
+                                : ""}
+                            </span>
+                          </div>
+                        )}
+                        {/* AHORA MUESTRA EL CONTEO REAL DE ALUMNOS */}
+                        <div className={styles.metaRow}>
+                          <span>
+                            👥 Alumnos inscritos:{" "}
+                            <strong>{clase.student_count || 0}</strong>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={styles.classFooter}>
+                      <span
+                        className={styles.classCode}
+                        title="Código de inscripción"
+                      >
+                        {clase.codigo_inscripcion}
+                      </span>
+
+                      <div className={styles.cardActions}>
+                        <Link
+                          to={`/docente/gradebook/${clase.id}`}
+                          className={styles.gradebookBtn}
+                          title="Ver Libro de Notas"
+                        >
+                          📊 Notas
+                        </Link>
+
+                        <button
+                          className={styles.iconBtn}
+                          onClick={() => handleOpenAssignModal(clase)}
+                          title="Asignar Nueva Tarea"
+                        >
+                          ➕
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </Link>
-
-                <div
-                  style={{
-                    marginTop: "10px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span className={styles.classCode}>
-                    Cód: {clase.codigo_inscripcion}
-                  </span>
-
-                  <button
-                    className={styles.assignBtn}
-                    onClick={() => handleOpenAssignModal(clase)}
-                    style={{ padding: "5px 10px", fontSize: "0.8rem" }}
-                  >
-                    Asignar Eval.
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
+        {/* SECCIÓN DE EVALUACIONES */}
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Evaluaciones Asignadas</h2>
-          <EvaluationList evaluations={evaluations} />
+          <h2 className={styles.cardTitle}>Evaluaciones Recientes</h2>
+          <EvaluationList
+            evaluations={evaluations}
+            onDeleteSuccess={fetchData}
+            onEdit={handleEditEvaluation}
+          />
         </div>
       </div>
 
@@ -157,26 +233,28 @@ function DashboardTeacher({ user }) {
           <h2 className={styles.cardTitle}>Banco de Rúbricas</h2>
           <UploadRubricForm onUploadSuccess={fetchData} />
           <div style={{ marginTop: "1rem" }}>
-            <RubricList rubrics={rubrics} />
+            <RubricList rubrics={rubrics} onDeleteSuccess={fetchData} />
           </div>
         </div>
       </div>
 
-      {/* MODAL DE ASIGNAR EVALUACIÓN */}
+      {/* MODAL DE ASIGNAR / EDITAR EVALUACIÓN */}
       {isAssignModalOpen && (
         <AssignRubricModal
-          clase={selectedClass}
+          clase={selectedClassForAssign}
           rubricas={rubrics}
           onClose={() => setIsAssignModalOpen(false)}
           onSuccess={handleAssignSuccess}
+          evaluationToEdit={evaluationToEdit}
         />
       )}
 
-      {/* MODAL DE CREAR CLASE (NUEVO) */}
+      {/* MODAL DE CREAR / EDITAR CLASE */}
       {isCreateClassModalOpen && (
         <CreateClassModal
           onClose={() => setIsCreateClassModalOpen(false)}
-          onSuccess={handleCreateClassSuccess}
+          onSuccess={handleClassModalSuccess}
+          classToEdit={classToEdit}
         />
       )}
     </div>

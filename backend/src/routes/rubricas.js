@@ -94,5 +94,31 @@ router.post(
     }
   }
 );
+// --- RUTA PARA ELIMINAR RÚBRICA ---
+router.delete("/:id", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
 
+  try {
+    // Validamos si la rúbrica ya se usó en una evaluación (Integridad Referencial)
+    const usoQuery = await db.query(
+      "SELECT id FROM Evaluaciones WHERE rubrica_id = $1",
+      [id]
+    );
+
+    if (usoQuery.rows.length > 0) {
+      return res.status(400).json({
+        message:
+          "No se puede eliminar: Esta rúbrica está siendo usada en evaluaciones activas.",
+      });
+    }
+
+    await db.query("DELETE FROM Criterios WHERE rubrica_id = $1", [id]); // Borramos hijos primero (si no tienes ON DELETE CASCADE)
+    await db.query("DELETE FROM Rubricas WHERE id = $1", [id]); // Borramos padre
+
+    res.json({ message: "Rúbrica eliminada correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar rúbrica:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
 module.exports = router;

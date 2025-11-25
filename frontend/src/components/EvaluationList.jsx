@@ -1,59 +1,98 @@
 import React from "react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale/es";
 import { Link } from "react-router-dom";
-import styles from "./EvaluationList.module.css"; // Importamos los estilos modulares
+import axios from "axios";
+import moment from "moment";
+import "moment/locale/es";
+import styles from "./EvaluationList.module.css";
 
-function EvaluationList({ evaluations }) {
-  // Estado vacío
-  if (evaluations.length === 0) {
-    return (
-      <div className={styles.listContainer}>
-        <p className={styles.emptyState}>
-          Aún no has asignado ninguna evaluación.
-        </p>
-      </div>
-    );
+moment.locale("es");
+
+// Recibimos "onEdit" como nueva prop
+function EvaluationList({ evaluations, onDeleteSuccess, onEdit }) {
+  const handleDelete = async (e, id, titulo) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`¿Seguro que deseas eliminar "${titulo}"?`)) return;
+
+    try {
+      await axios.delete(`/api/evaluaciones/${id}`);
+      if (onDeleteSuccess) onDeleteSuccess();
+    } catch (error) {
+      alert(error.response?.data?.message || "Error al eliminar.");
+    }
+  };
+
+  const handleEditClick = (e, evalItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onEdit) onEdit(evalItem);
+  };
+
+  if (!evaluations || evaluations.length === 0) {
+    return <div className={styles.empty}>No hay evaluaciones asignadas.</div>;
   }
 
   return (
     <div className={styles.listContainer}>
-      <div className={styles.list}>
-        {evaluations.map((evaluacion) => (
-          <div key={evaluacion.id} className={styles.item}>
-            {/* Parte Izquierda: Info Principal */}
+      {evaluations.map((evalItem) => {
+        const fechaFin = evalItem.fecha_fin ? moment(evalItem.fecha_fin) : null;
+        const diasRestantes = fechaFin ? fechaFin.diff(moment(), "days") : 99;
+        const esUrgente = diasRestantes <= 3 && diasRestantes >= 0;
+
+        return (
+          <div
+            key={evalItem.id}
+            className={styles.item}
+            style={{ borderLeftColor: esUrgente ? "#ea4335" : "#1a73e8" }}
+          >
             <div className={styles.info}>
               <Link
-                to={`/docente/evaluacion/${evaluacion.id}`}
-                className={styles.titleLink}
+                to={`/docente/evaluacion/${evalItem.id}`}
+                style={{ textDecoration: "none", color: "inherit" }}
               >
-                {evaluacion.nombre_evaluacion}
-              </Link>
-              <div className={styles.meta}>
-                <span className={styles.badge}>
-                  {evaluacion.tipo_evaluacion}
+                <span className={styles.title}>
+                  {evalItem.nombre_evaluacion}
                 </span>
-                <span>•</span>
-                <span>{evaluacion.nombre_clase}</span>
+              </Link>
+
+              <div className={styles.subInfo}>
+                <span className={styles.tag}>{evalItem.tipo_evaluacion}</span>
+                <span>• {evalItem.nombre_clase}</span>
               </div>
             </div>
 
-            {/* Parte Derecha: Fecha Límite */}
-            {evaluacion.fecha_fin ? (
-              <div className={styles.date}>
-                Vence:{" "}
-                {format(new Date(evaluacion.fecha_fin), "dd/MM/yyyy", {
-                  locale: es,
-                })}
-              </div>
-            ) : (
-              <span style={{ fontSize: "0.8rem", color: "#999" }}>
-                Sin fecha
+            <div className={styles.meta}>
+              <span
+                className={`${styles.date} ${
+                  esUrgente ? styles.urgent : styles.normal
+                }`}
+              >
+                {fechaFin ? `Vence: ${fechaFin.format("D MMM")}` : "Sin fecha"}
               </span>
-            )}
+
+              {/* BOTÓN EDITAR */}
+              <button
+                className={styles.deleteBtn}
+                onClick={(e) => handleEditClick(e, evalItem)}
+                title="Editar Evaluación"
+                style={{ color: "#1a73e8" }} // Azul para editar
+              >
+                ✏️
+              </button>
+
+              <button
+                className={styles.deleteBtn}
+                onClick={(e) =>
+                  handleDelete(e, evalItem.id, evalItem.nombre_evaluacion)
+                }
+                title="Eliminar Evaluación"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

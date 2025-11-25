@@ -6,123 +6,171 @@ import "moment/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import styles from "./CalendarPage.module.css";
 
-// Configurar idioma español para moment
 moment.locale("es");
 const localizer = momentLocalizer(moment);
 
+// Mapeo de días para generar recurrencia
+const DAY_MAP = {
+  Domingo: 0,
+  Lunes: 1,
+  Martes: 2,
+  Miércoles: 3,
+  Jueves: 4,
+  Viernes: 5,
+  Sábado: 6,
+};
+
 const CalendarPage = () => {
   const [events, setEvents] = useState([]);
-
-  // --- ESTADO PARA CONTROLAR LA NAVEGACIÓN ---
   const [date, setDate] = useState(new Date());
   const [view, setView] = useState(Views.MONTH);
 
   useEffect(() => {
-    fetchEvents();
+    fetchData();
   }, []);
 
-  const fetchEvents = async () => {
+  const fetchData = async () => {
     try {
       const response = await axios.get("/api/evaluaciones/calendario");
-      const data = response.data;
+      const { evaluaciones, clases } = response.data;
 
-      const formattedEvents = data
-        .map((ev) => {
-          if (!ev.fecha_fin) return null;
+      const allEvents = [];
 
-          const fechaInicio = new Date(ev.fecha_fin);
+      // 1. PROCESAR EVALUACIONES (Eventos Únicos)
+      evaluaciones.forEach((ev) => {
+        if (!ev.fecha_fin) return;
+        const start = new Date(ev.fecha_fin);
 
-          // Clonamos para duración visual de 1 hora
-          const fechaFinVisual = new Date(fechaInicio);
-          fechaFinVisual.setHours(fechaInicio.getHours() + 1);
+        // Duración visual de 1 hora
+        const end = new Date(start);
+        end.setHours(start.getHours() + 1);
 
-          const tieneHora =
-            fechaInicio.getHours() !== 0 || fechaInicio.getMinutes() !== 0;
+        const hasTime = start.getHours() !== 0 || start.getMinutes() !== 0;
+        let title = `${ev.nombre_clase} - ${ev.nombre_evaluacion}`;
+        if (hasTime) title = `⏰ ${moment(start).format("HH:mm")} ${title}`;
 
-          // Título con hora
-          let tituloDisplay = `${ev.nombre_clase} - ${ev.nombre_evaluacion}`;
-          if (tieneHora) {
-            const hora = moment(fechaInicio).format("HH:mm");
-            tituloDisplay = `⏰ ${hora} ${tituloDisplay}`;
+        allEvents.push({
+          id: `eval-${ev.id}`,
+          title,
+          start,
+          end,
+          allDay: !hasTime,
+          type: "evaluation", // Tipo para colorear
+          status: ev.entregado ? "submitted" : "pending",
+        });
+      });
+
+      // 2. PROCESAR CLASES (Eventos Recurrentes)
+      // Generamos eventos para el año actual
+      const currentYear = new Date().getFullYear();
+
+      clases.forEach((clase) => {
+        if (!clase.dias || !clase.hora_inicio) return;
+
+        // Convertir "Lunes, Miércoles" -> [1, 3]
+        const targetDays = clase.dias
+          .split(", ")
+          .map((d) => DAY_MAP[d.trim()])
+          .filter((d) => d !== undefined);
+
+        // Parsear horas (Ej: "08:00:00")
+        const [hInicio, mInicio] = clase.hora_inicio.split(":").map(Number);
+        const [hFin, mFin] = clase.hora_fin
+          ? clase.hora_fin.split(":").map(Number)
+          : [hInicio + 1, mInicio];
+
+        // Generar eventos para cada día del año que coincida
+        // (Optimización: Podríamos generar solo el mes visible, pero por ahora hacemos el año simple)
+        let cursor = new Date(currentYear, 0, 1);
+        const endOfYear = new Date(currentYear, 11, 31);
+
+        while (cursor <= endOfYear) {
+          if (targetDays.includes(cursor.getDay())) {
+            // Crear fecha inicio
+            const start = new Date(cursor);
+            start.setHours(hInicio, mInicio, 0);
+
+            // Crear fecha fin
+            const end = new Date(cursor);
+            end.setHours(hFin, mFin, 0);
+
+            allEvents.push({
+              id: `class-${clase.id}-${cursor.getTime()}`, // ID único
+              title: `📚 ${clase.nombre_clase}`,
+              start,
+              end,
+              allDay: false,
+              type: "class", // Tipo especial
+            });
           }
+          // Avanzar al siguiente día
+          cursor.setDate(cursor.getDate() + 1);
+        }
+      });
 
-          return {
-            id: ev.id,
-            title: tituloDisplay,
-            start: fechaInicio,
-            end: fechaFinVisual,
-            allDay: !tieneHora,
-            resource: {
-              entregado: ev.entregado,
-              clase: ev.nombre_clase,
-            },
-          };
-        })
-        .filter((ev) => ev !== null);
-
-      setEvents(formattedEvents);
+      setEvents(allEvents);
     } catch (error) {
-      console.error("Error cargando el calendario:", error);
+      console.error("Error cargando calendario:", error);
     }
   };
 
   const onNavigate = useCallback((newDate) => setDate(newDate), [setDate]);
   const onView = useCallback((newView) => setView(newView), [setView]);
 
-  // --- 🎨 ESTILOS DINÁMICOS ---
+  // --- ESTILOS ---
   const eventStyleGetter = (event) => {
-    let colorBase = "#1A73E8"; // Azul (Pendiente)
-    const now = new Date();
-    const isPast = new Date(event.start) < now;
-
-    if (event.resource.entregado) {
-      colorBase = "#34A853"; // Verde (Entregado)
-    } else if (isPast) {
-      colorBase = "#EA4335"; // Rojo (Vencido)
-    }
-
-    // DISEÑO ESPECÍFICO PARA VISTA AGENDA
-    if (view === "agenda") {
+    // 1. ESTILO PARA CLASES (Horario Recurrente)
+    if (event.type === "class") {
       return {
         style: {
-          backgroundColor: "transparent", // Fondo transparente
-          color: "#333", // Texto oscuro
-          borderLeft: `6px solid ${colorBase}`, // Borde de color a la izquierda
-          borderRadius: "0px",
-          padding: "5px",
-          fontSize: "0.9rem",
+          backgroundColor: "#673AB7", // Morado Académico
+          borderLeft: view === "agenda" ? "6px solid #673AB7" : "0px",
+          backgroundColor: view === "agenda" ? "transparent" : "#673AB7",
+          color: view === "agenda" ? "#333" : "white",
+          borderRadius: "4px",
+          opacity: 0.8, // Un poco transparente para no tapar evaluaciones urgentes
+          fontSize: "0.85rem",
         },
       };
     }
 
-    // DISEÑO PARA MES / SEMANA / DÍA (Bloques sólidos)
+    // 2. ESTILO PARA EVALUACIONES
+    let colorBase = "#1A73E8"; // Azul
+    const now = new Date();
+    const isPast = new Date(event.start) < now;
+
+    if (event.status === "submitted") colorBase = "#34A853"; // Verde
+    else if (isPast) colorBase = "#EA4335"; // Rojo
+
+    if (view === "agenda") {
+      return {
+        style: {
+          backgroundColor: "transparent",
+          color: "#333",
+          borderLeft: `6px solid ${colorBase}`,
+          padding: "5px",
+        },
+      };
+    }
+
     return {
       style: {
         backgroundColor: colorBase,
         borderRadius: "6px",
-        opacity: 0.9,
         color: "white",
-        border: "0px",
         display: "block",
         fontSize: "0.85rem",
       },
     };
   };
 
-  // --- 📅 FORMATOS DE FECHA (Para que salga en Español y 24h) ---
   const formats = {
-    // Formato de fecha en la columna izquierda de la agenda (Ej: "Mié 05 Nov")
     agendaDateFormat: (date, culture, localizer) =>
-      localizer.format(date, "ddd DD MMM", culture).charAt(0).toUpperCase() +
-      localizer.format(date, "ddd DD MMM", culture).slice(1),
-
-    // Formato de hora (Ej: "13:00 - 14:00")
+      localizer.format(date, "ddd DD MMM", culture),
     agendaTimeRangeFormat: ({ start, end }, culture, localizer) =>
       localizer.format(start, "HH:mm", culture) +
       " - " +
       localizer.format(end, "HH:mm", culture),
-
-    // Formato de hora simple
     timeGutterFormat: (date, culture, localizer) =>
       localizer.format(date, "HH:mm", culture),
   };
@@ -137,23 +185,30 @@ const CalendarPage = () => {
         <div className={styles.legendItem}>
           <div
             className={styles.dot}
+            style={{ backgroundColor: "#673AB7" }}
+          ></div>{" "}
+          Clases
+        </div>
+        <div className={styles.legendItem}>
+          <div
+            className={styles.dot}
             style={{ backgroundColor: "#1A73E8" }}
           ></div>{" "}
-          Pendiente
+          Tarea Pendiente
         </div>
         <div className={styles.legendItem}>
           <div
             className={styles.dot}
             style={{ backgroundColor: "#34A853" }}
           ></div>{" "}
-          Entregado
+          Tarea Entregada
         </div>
         <div className={styles.legendItem}>
           <div
             className={styles.dot}
             style={{ backgroundColor: "#EA4335" }}
           ></div>{" "}
-          Vencido
+          Tarea Vencida
         </div>
       </div>
 
@@ -167,7 +222,7 @@ const CalendarPage = () => {
           onView={onView}
           startAccessor="start"
           endAccessor="end"
-          formats={formats} // 👈 APLICAMOS LOS FORMATOS AQUÍ
+          formats={formats}
           style={{ height: "100%" }}
           messages={{
             next: "Siguiente",
@@ -179,8 +234,8 @@ const CalendarPage = () => {
             agenda: "Agenda",
             date: "Fecha",
             time: "Hora",
-            event: "Evaluación",
-            noEventsInRange: "No hay evaluaciones en este periodo.",
+            event: "Evento",
+            noEventsInRange: "Sin actividades.",
           }}
           eventPropGetter={eventStyleGetter}
           popup

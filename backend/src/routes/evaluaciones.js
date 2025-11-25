@@ -130,12 +130,13 @@ router.get("/entregadas", isAuthenticated, async (req, res) => {
 });
 
 // --- (NUEVO) 4.5 Ruta para CALENDARIO GLOBAL (Feature 13) ---
+// --- (MODIFICADO) 4.5 Ruta para CALENDARIO GLOBAL + HORARIOS DE CLASE ---
 router.get("/calendario", isAuthenticated, async (req, res) => {
   const usuario_id = req.user.id;
   try {
-    // Obtenemos TODAS las evaluaciones de las clases donde está inscrito
-    // Y verificamos si ya existe una entrega
-    const query = `
+    // 1. Obtener Evaluaciones (Eventos Únicos)
+    const evaluacionesQuery = await db.query(
+      `
       SELECT 
         e.id, 
         e.nombre_evaluacion, 
@@ -148,15 +149,36 @@ router.get("/calendario", isAuthenticated, async (req, res) => {
       LEFT JOIN Entregas ent ON e.id = ent.evaluacion_id AND ent.usuario_id = $1
       WHERE i.usuario_id = $1
       ORDER BY e.fecha_fin ASC;
-    `;
-    const calendarioQuery = await db.query(query, [usuario_id]);
-    res.json(calendarioQuery.rows);
+    `,
+      [usuario_id]
+    );
+
+    // 2. Obtener Horarios de Clases (Eventos Recurrentes)
+    const clasesQuery = await db.query(
+      `
+      SELECT 
+        c.id,
+        c.nombre_clase,
+        c.dias,        -- Ej: "Lunes, Miércoles"
+        c.hora_inicio, -- Ej: "08:00:00"
+        c.hora_fin     -- Ej: "10:00:00"
+      FROM Clases c
+      JOIN Inscripciones i ON c.id = i.clase_id
+      WHERE i.usuario_id = $1
+    `,
+      [usuario_id]
+    );
+
+    // Devolvemos ambos objetos
+    res.json({
+      evaluaciones: evaluacionesQuery.rows,
+      clases: clasesQuery.rows,
+    });
   } catch (error) {
     console.error("Error al obtener datos del calendario:", error);
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
-
 // --- 5. Ruta para que el ESTUDIANTE revise su ENTREGA ---
 router.get("/:id/entrega", isAuthenticated, async (req, res) => {
   const { id: evaluacion_id_str } = req.params;
@@ -417,35 +439,77 @@ router.post(
   }
 );
 
-// --- 8. Ruta para que el DOCENTE vea las entregas ---
+// --- 8. Ruta para que el DOCENTE vea las entregas (CORREGIDA CON ARCHIVOS) ---
 router.get(
   "/:id/entregas_docente",
   [isAuthenticated, isTeacher],
   async (req, res) => {
     const { id: evaluacion_id } = req.params;
+
     try {
+      // Obtenemos alumnos + datos de entrega + archivo (solo el primero si hay varios)
       const entregasQuery = await db.query(
         `SELECT 
-          e.id as entrega_id, 
-          e.fecha_entrega, 
-          u.nombre_completo as nombre_estudiante,
-          u.email as email_estudiante,
-          u.id as usuario_id,
-          c.id as calificacion_id,
-          c.nota 
-        FROM Inscripciones i
-        JOIN Usuarios u ON i.usuario_id = u.id
-        JOIN Evaluaciones ev ON ev.id = $1
-        LEFT JOIN Entregas e ON e.usuario_id = u.id AND e.evaluacion_id = $1
-        LEFT JOIN Calificaciones c ON c.entrega_id = e.id
-        WHERE i.clase_id = ev.clase_id
-        ORDER BY u.nombre_completo ASC`,
+          u.id AS usuario_id, 
+          u.nombre_completo AS nombre_estudiante,
+          u.email AS email_estudiante,
+          e.id AS entrega_id,
+          e.fecha_entrega,
+          e.enlace_url, -- Para entregas tipo enlace
+          ae.ruta_archivo, -- Para entregas tipo archivo
+          c.id AS calificacion_id,
+          c.nota
+        FROM 
+          Usuarios u
+        JOIN 
+          Inscripciones i ON u.id = i.usuario_id
+        LEFT JOIN 
+          Entregas e ON e.usuario_id = u.id AND e.evaluacion_id = $1
+        LEFT JOIN 
+          Archivos_Entrega ae ON ae.entrega_id = e.id
+        LEFT JOIN 
+          Calificaciones c ON c.entrega_id = e.id
+        WHERE 
+          i.clase_id = (SELECT clase_id FROM Evaluaciones WHERE id = $1) 
+          AND u.rol = 'estudiante'
+        ORDER BY 
+          u.nombre_completo ASC`,
         [evaluacion_id]
       );
-      res.json(entregasQuery.rows);
+
+      // Procesar URLs firmadas de Firebase
+      const filasConUrl = await Promise.all(
+        entregasQuery.rows.map(async (row) => {
+          let urlFinal = null;
+
+          // Caso 1: Es un archivo en Firebase
+          if (row.ruta_archivo) {
+            const options = {
+              version: "v4",
+              action: "read",
+              expires: Date.now() + 60 * 60 * 1000, // 1 hora
+            };
+            const [signedUrl] = await bucket
+              .file(row.ruta_archivo)
+              .getSignedUrl(options);
+            urlFinal = signedUrl;
+          }
+          // Caso 2: Es un enlace externo (Drive, Github, etc)
+          else if (row.enlace_url) {
+            urlFinal = row.enlace_url;
+          }
+
+          return {
+            ...row,
+            url_para_ver: urlFinal, // Campo unificado para el frontend
+          };
+        })
+      );
+
+      res.json(filasConUrl);
     } catch (error) {
-      console.error("Error al obtener las entregas del docente:", error);
-      res.status(500).json({ message: "Error interno del servidor." });
+      console.error("Error al obtener las entregas:", error);
+      res.status(500).json({ message: "Error interno." });
     }
   }
 );
@@ -656,5 +720,58 @@ router.get("/clase/:claseId", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Error interno." });
   }
 });
+// --- RUTA PARA ELIMINAR EVALUACIÓN ---
+router.delete("/:id", [isAuthenticated, isTeacher], async (req, res) => {
+  const { id } = req.params;
 
+  try {
+    // 1. Verificar Integridad: ¿Hay entregas de alumnos?
+    const entregasQuery = await db.query(
+      "SELECT id FROM Entregas WHERE evaluacion_id = $1",
+      [id]
+    );
+
+    if (entregasQuery.rows.length > 0) {
+      return res.status(400).json({
+        message:
+          "No se puede eliminar: Hay alumnos que ya enviaron tareas en esta evaluación.",
+      });
+    }
+
+    // 2. Si está limpio, procedemos a borrar
+    await db.query("DELETE FROM Evaluaciones WHERE id = $1", [id]);
+
+    res.json({ message: "Evaluación eliminada correctamente." });
+  } catch (error) {
+    console.error("Error al eliminar evaluación:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
+
+// --- RUTA PARA EDITAR EVALUACIÓN (PUT) ---
+router.put("/:id", [isAuthenticated, isTeacher], async (req, res) => {
+  const { id } = req.params;
+  const { nombre_evaluacion, fecha_fin, tipo_entrega } = req.body;
+
+  // Nota: Por seguridad, en este MVP no permitimos cambiar la rúbrica ni la clase una vez creada
+  // para no romper la integridad de datos si ya hay notas.
+
+  try {
+    const updateQuery = await db.query(
+      `UPDATE Evaluaciones 
+       SET nombre_evaluacion = $1, fecha_fin = $2, tipo_entrega = $3
+       WHERE id = $4 RETURNING *`,
+      [nombre_evaluacion, fecha_fin, tipo_entrega, id]
+    );
+
+    if (updateQuery.rows.length === 0) {
+      return res.status(404).json({ message: "Evaluación no encontrada." });
+    }
+
+    res.json(updateQuery.rows[0]);
+  } catch (error) {
+    console.error("Error al actualizar evaluación:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
 module.exports = router;

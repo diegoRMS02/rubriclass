@@ -9,7 +9,8 @@ import EvaluationPage from "./pages/EvaluationPage";
 import TeacherGradingPage from "./pages/TeacherGradingPage";
 import StudentClassPage from "./pages/StudentClassPage";
 import TeacherClassPage from "./pages/TeacherClassPage";
-import CalendarPage from "./pages/CalendarPage"; // Importación de la Feature 13
+import CalendarPage from "./pages/CalendarPage"; // Feature 13
+import TeacherGradebookPage from "./pages/TeacherGradebookPage"; // Feature 14 (NUEVO)
 
 // Importamos el Layout Principal
 import MainLayout from "./layout/MainLayout";
@@ -92,7 +93,7 @@ function App() {
         }
       />
 
-      {/* Ruta 5: Aula Virtual (Estudiante) - ¡ESTA ES LA CLAVE! */}
+      {/* Ruta 5: Aula Virtual (Estudiante) */}
       <Route
         path="/clase/:id"
         element={
@@ -130,6 +131,20 @@ function App() {
             </MainLayout>
           ) : (
             <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      {/* Ruta 8: Gradebook Global (Feature 14) - NUEVA */}
+      <Route
+        path="/docente/gradebook/:id"
+        element={
+          user && user.rol === "docente" ? (
+            <MainLayout user={user}>
+              <TeacherGradebookPage />
+            </MainLayout>
+          ) : (
+            <Navigate to="/" replace />
           )
         }
       />

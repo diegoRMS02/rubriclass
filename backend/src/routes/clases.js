@@ -16,18 +16,38 @@ function generateCode() {
 
 // --- RUTAS DOCENTE ---
 
-// GET /api/clases (Listar clases del docente)
+// GET /api/clases (Listar clases del docente CON CONTEO DE ALUMNOS)
 router.get("/", [isAuthenticated, isTeacher], async (req, res) => {
-  const docente_id = req.user.id;
+  const { id: docente_id } = req.user;
 
   try {
-    const clasesQuery = await db.query(
-      "SELECT * FROM Clases WHERE docente_id = $1 ORDER BY fecha_creacion DESC",
+    // Consulta optimizada: Cuenta cuántos alumnos hay inscritos en cada clase
+    const result = await db.query(
+      `SELECT 
+          c.id, 
+          c.nombre_clase, 
+          c.seccion, 
+          c.dias, 
+          c.hora_inicio, 
+          c.hora_fin, 
+          c.codigo_inscripcion, 
+          COUNT(i.clase_id) AS student_count  -- <--- Campo nuevo
+       FROM 
+          Clases c
+       LEFT JOIN 
+          Inscripciones i ON c.id = i.clase_id
+       WHERE 
+          c.docente_id = $1
+       GROUP BY 
+          c.id, c.nombre_clase, c.seccion, c.dias, c.hora_inicio, c.hora_fin, c.codigo_inscripcion, c.fecha_creacion
+       ORDER BY 
+          c.fecha_creacion DESC`, // Usamos fecha_creacion para ordenar
       [docente_id]
     );
-    res.json(clasesQuery.rows);
+
+    res.json(result.rows);
   } catch (error) {
-    console.error("Error al obtener las clases:", error);
+    console.error("Error al obtener clases con conteo de alumnos:", error);
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
@@ -56,7 +76,7 @@ router.post("/", [isAuthenticated, isTeacher], async (req, res) => {
           dias,
           hora_inicio,
           hora_fin
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [
         nombre_clase,
         codigo_inscripcion,
@@ -71,6 +91,30 @@ router.post("/", [isAuthenticated, isTeacher], async (req, res) => {
     res.status(201).json(nuevaClaseQuery.rows[0]);
   } catch (error) {
     console.error("Error al crear la clase:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
+
+// --- RUTA PARA EDITAR CLASE (PUT) ---
+router.put("/:id", [isAuthenticated, isTeacher], async (req, res) => {
+  const { id } = req.params;
+  const { nombre_clase, seccion, dias, hora_inicio, hora_fin } = req.body;
+
+  try {
+    const updateQuery = await db.query(
+      `UPDATE Clases 
+       SET nombre_clase = $1, seccion = $2, dias = $3, hora_inicio = $4, hora_fin = $5
+       WHERE id = $6 RETURNING *`,
+      [nombre_clase, seccion, dias, hora_inicio, hora_fin, id]
+    );
+
+    if (updateQuery.rows.length === 0) {
+      return res.status(404).json({ message: "Clase no encontrada." });
+    }
+
+    res.json(updateQuery.rows[0]);
+  } catch (error) {
+    console.error("Error al actualizar clase:", error);
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
@@ -256,5 +300,92 @@ router.get("/:id/contenido", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Error interno." });
   }
 });
+// --- RUTA 13: GRADEBOOK (La Matriz de Notas) ---
+router.get("/:id/gradebook", [isAuthenticated, isTeacher], async (req, res) => {
+  const { id: clase_id } = req.params;
 
+  try {
+    // 1. Obtener todos los ESTUDIANTES inscritos
+    const estudiantesQuery = await db.query(
+      `SELECT u.id, u.nombre_completo, u.email, u.foto_url 
+       FROM Usuarios u
+       JOIN Inscripciones i ON u.id = i.usuario_id
+       WHERE i.clase_id = $1 AND u.rol = 'estudiante'
+       ORDER BY u.nombre_completo ASC`,
+      [clase_id]
+    );
+
+    // 2. Obtener todas las EVALUACIONES de la clase
+    const evaluacionesQuery = await db.query(
+      `SELECT id, nombre_evaluacion, tipo_evaluacion 
+       FROM Evaluaciones 
+       WHERE clase_id = $1 
+       ORDER BY fecha_creacion ASC`,
+      [clase_id]
+    );
+
+    // 3. Obtener todas las NOTAS existentes
+    // Hacemos un JOIN complejo para llegar de Evaluacion -> Entrega -> Calificacion
+    const notasQuery = await db.query(
+      `SELECT 
+          e.usuario_id, 
+          ev.id as evaluacion_id, 
+          c.nota
+       FROM Calificaciones c
+       JOIN Entregas e ON c.entrega_id = e.id
+       JOIN Evaluaciones ev ON e.evaluacion_id = ev.id
+       WHERE ev.clase_id = $1`,
+      [clase_id]
+    );
+
+    // 4. PROCESAMIENTO DE DATOS (Armar la matriz en el Backend)
+    const estudiantes = estudiantesQuery.rows;
+    const evaluaciones = evaluacionesQuery.rows;
+    const notas = notasQuery.rows;
+
+    // Creamos un diccionario rápido para buscar notas: { "usuarioId-evaluacionId": nota }
+    const notasMap = {};
+    notas.forEach((n) => {
+      notasMap[`${n.usuario_id}-${n.evaluacion_id}`] = parseFloat(n.nota);
+    });
+
+    // Armamos la respuesta final enriquecida
+    const gradebook = estudiantes.map((estudiante) => {
+      let sumaNotas = 0;
+      let cantidadNotas = 0;
+
+      // Mapeamos las notas de este estudiante para cada evaluación
+      const notasEstudiante = evaluaciones.map((evaluacion) => {
+        const nota = notasMap[`${estudiante.id}-${evaluacion.id}`];
+
+        if (nota !== undefined && nota !== null) {
+          sumaNotas += nota;
+          cantidadNotas++;
+          return nota; // Retornamos la nota numérica
+        }
+        return null; // No tiene nota
+      });
+
+      // Calculamos promedio simple (puedes mejorarlo con pesos después)
+      const promedio =
+        cantidadNotas > 0 ? (sumaNotas / cantidadNotas).toFixed(1) : "-";
+
+      return {
+        ...estudiante,
+        notas: notasEstudiante, // Array de notas en orden [nota1, nota2, null...]
+        promedio: promedio,
+      };
+    });
+
+    res.json({
+      meta: {
+        evaluaciones: evaluaciones, // Para pintar los encabezados de la tabla
+      },
+      data: gradebook, // Las filas de la tabla
+    });
+  } catch (error) {
+    console.error("Error al obtener gradebook:", error);
+    res.status(500).json({ message: "Error interno al generar el reporte." });
+  }
+});
 module.exports = router;
