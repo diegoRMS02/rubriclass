@@ -388,4 +388,44 @@ router.get("/:id/gradebook", [isAuthenticated, isTeacher], async (req, res) => {
     res.status(500).json({ message: "Error interno al generar el reporte." });
   }
 });
+
+// --- RUTA: OBTENER PERSONAS (ALUMNOS) DE UNA CLASE ---
+router.get("/:id/personas", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const query = `
+      SELECT u.id, u.nombre_completo, u.email, u.foto_url, i.fecha_inscripcion
+      FROM Usuarios u
+      JOIN Inscripciones i ON u.id = i.usuario_id
+      WHERE i.clase_id = $1 AND u.rol = 'estudiante'
+      ORDER BY u.nombre_completo ASC
+    `;
+    const result = await db.query(query, [id]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener personas:", error);
+    res.status(500).json({ message: "Error interno." });
+  }
+});
+
+// --- RUTA: ELIMINAR ALUMNO DE UNA CLASE (EXPULSAR) ---
+router.delete(
+  "/:id/personas/:usuarioId",
+  [isAuthenticated, isTeacher],
+  async (req, res) => {
+    const { id: clase_id, usuarioId } = req.params;
+
+    try {
+      // Borramos la inscripción (Las notas y entregas quedarán huérfanas o se borran si configuraste CASCADE)
+      await db.query(
+        "DELETE FROM Inscripciones WHERE clase_id = $1 AND usuario_id = $2",
+        [clase_id, usuarioId]
+      );
+      res.json({ message: "Alumno eliminado de la clase." });
+    } catch (error) {
+      console.error("Error al eliminar alumno:", error);
+      res.status(500).json({ message: "Error interno." });
+    }
+  }
+);
 module.exports = router;

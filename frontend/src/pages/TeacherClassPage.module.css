@@ -1,72 +1,96 @@
+/* TeacherClassPage.module.css */
+
 .container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Banner (Igual al del estudiante para consistencia) */
+/* --- BANNER AZUL (Header) --- */
 .banner {
-  background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+  padding: 2rem 3rem;
   color: white;
-  padding: 2.5rem;
-  border-radius: 16px;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 25px -5px rgba(26, 115, 232, 0.4);
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.2);
+  position: relative; /* Para posicionar elementos absolutos si fuera necesario */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.banner::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background-image: radial-gradient(
-      circle at 10% 20%,
-      rgba(255, 255, 255, 0.1) 0%,
-      transparent 20%
-    ),
-    radial-gradient(
-      circle at 90% 80%,
-      rgba(255, 255, 255, 0.1) 0%,
-      transparent 20%
-    );
-  pointer-events: none;
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .backBtn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 20px;
   cursor: pointer;
-  margin-bottom: 1rem;
   font-size: 0.85rem;
   font-weight: 500;
-  backdrop-filter: blur(4px);
   transition: background 0.2s;
+  text-decoration: none;
+  display: inline-block;
+  width: fit-content;
 }
+
 .backBtn:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Nuevo botón de configuración */
+.settingsBtn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.settingsBtn:hover {
+  background: white;
+  color: #1a73e8; /* Icono se vuelve azul */
+  transform: rotate(90deg); /* Efecto visual divertido */
+}
+
+.courseInfo {
+  margin-top: 0.5rem;
+}
+
 .courseTitle {
-  font-size: 2.2rem;
-  margin: 0;
+  font-size: 2.5rem;
   font-weight: 800;
+  margin: 0 0 0.5rem 0;
   letter-spacing: -0.5px;
-  line-height: 1.2;
 }
 
 .codeBadge {
-  display: inline-block;
-  margin-top: 10px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 4px 10px;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 6px 12px;
   border-radius: 6px;
-  font-family: monospace;
   font-size: 0.9rem;
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* --- CONTENEDOR DE PESTAÑAS Y CONTENIDO --- */
+.tabContent {
+  padding: 0 2rem 2rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }

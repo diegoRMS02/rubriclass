@@ -1,164 +1,228 @@
-import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
-import { es } from "date-fns/locale/es"; // Para formatear fechas bonito
-import EnrollClassForm from "../components/EnrollClassForm";
+import axios from "axios";
+import moment from "moment";
+import "moment/locale/es";
 import styles from "./DashboardStudent.module.css";
 
-function DashboardStudent({ user }) {
-  const [classes, setClasses] = useState([]);
-  const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
-  const [evaluacionesEntregadas, setEvaluacionesEntregadas] = useState([]);
+moment.locale("es");
 
-  const fetchData = useCallback(async () => {
+function DashboardStudent({ user }) {
+  const [inscripciones, setInscripciones] = useState([]);
+  const [pendientes, setPendientes] = useState([]);
+  const [entregadas, setEntregadas] = useState([]);
+
+  // Estado para unirse a clase
+  const [codigo, setCodigo] = useState("");
+  const [loadingJoin, setLoadingJoin] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
     try {
-      const [clasesRes, pendientesRes, entregadasRes] = await Promise.all([
+      const [inscripRes, pendRes, entRes] = await Promise.all([
         axios.get("/api/clases/inscripciones"),
         axios.get("/api/evaluaciones/pendientes"),
         axios.get("/api/evaluaciones/entregadas"),
       ]);
-      setClasses(clasesRes.data);
-      setEvaluacionesPendientes(pendientesRes.data);
-      setEvaluacionesEntregadas(entregadasRes.data);
+      setInscripciones(inscripRes.data);
+      setPendientes(pendRes.data);
+      setEntregadas(entRes.data);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error cargando dashboard:", error);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Función auxiliar para formatear fecha corta (ej: 05 nov)
-  const formatDate = (dateString) => {
-    if (!dateString) return "Sin fecha";
-    return format(new Date(dateString), "dd MMM", { locale: es });
+  const handleUnirse = async (e) => {
+    e.preventDefault();
+    if (!codigo) return;
+    setLoadingJoin(true);
+    try {
+      await axios.post("/api/clases/inscribir", { codigo_inscripcion: codigo });
+      alert("¡Te has inscrito correctamente!");
+      setCodigo("");
+      fetchData();
+    } catch (error) {
+      alert(error.response?.data?.message || "Error al inscribirse");
+    } finally {
+      setLoadingJoin(false);
+    }
   };
 
   return (
     <div className={styles.container}>
+      {/* HEADER DE BIENVENIDA */}
       <div className={styles.header}>
-        <h1 className={styles.welcome}>
-          Hola, {user.nombre_completo.split(" ")[0]} 👋
-        </h1>
-        <p className={styles.subtitle}>Bienvenido a tu aula virtual</p>
-      </div>
-
-      <div className={styles.enrollSection}>
-        <EnrollClassForm onClassEnrolled={fetchData} />
-      </div>
-
-      {/* MIS CURSOS */}
-      <h2 className={styles.sectionTitle}>📚 Mis Cursos</h2>
-      <div className={styles.grid}>
-        {classes.length === 0 && (
-          <p className={styles.emptyText}>
-            No estás inscrito en ningún curso aún.
+        <div>
+          <h1 className={styles.welcomeTitle}>
+            Hola, {user.nombre_completo.split(" ")[0]} 👋
+          </h1>
+          <p className={styles.subtitle}>
+            Bienvenido a tu aula virtual. ¡A aprender!
           </p>
-        )}
-
-        {classes.map((clase) => (
-          <Link
-            key={clase.id}
-            to={`/clase/${clase.id}`}
-            className={styles.courseCard}
-          >
-            <div className={styles.courseImage}>
-              <div className={styles.courseImageOverlay}></div>
-            </div>
-            <div className={styles.courseInfo}>
-              <div>
-                <h3 className={styles.courseName}>{clase.nombre_clase}</h3>
-                <p className={styles.docenteName}>{clase.nombre_docente}</p>
-              </div>
-            </div>
-          </Link>
-        ))}
+        </div>
       </div>
 
-      {/* TAREAS PENDIENTES */}
-      <h2 className={styles.sectionTitle} style={{ marginTop: "3rem" }}>
-        🔥 Próximas Entregas
-      </h2>
-      <div className={styles.taskList}>
-        {evaluacionesPendientes.length === 0 && (
-          <p className={styles.emptyText}>
-            ¡Todo al día! No tienes tareas pendientes.
-          </p>
-        )}
-
-        {evaluacionesPendientes.map((task) => (
-          <Link
-            key={task.id}
-            to={`/evaluacion/${task.id}`}
-            className={styles.taskCard}
-          >
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <div className={styles.iconFire}>🔥</div>
-              <div className={styles.taskInfo}>
-                <span className={styles.taskTitle}>
-                  {task.nombre_evaluacion}
-                </span>
-                <span className={styles.taskMeta}>{task.nombre_clase}</span>
-              </div>
-            </div>
-            <div className={styles.taskDate}>
-              Vence: {formatDate(task.fecha_fin)}
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* HISTORIAL DE ENTREGAS */}
-      {evaluacionesEntregadas.length > 0 && (
-        <>
-          <h2 className={styles.sectionTitle} style={{ marginTop: "3rem" }}>
-            ✅ Historial de Entregas
-          </h2>
-          <div className={styles.taskList}>
-            {evaluacionesEntregadas.map((task) => (
-              <Link
-                key={task.id}
-                to={`/evaluacion/${task.id}`}
-                className={`${styles.taskCard} ${styles.delivered}`}
+      {/* GRID PRINCIPAL */}
+      <div className={styles.dashboardGrid}>
+        {/* COLUMNA IZQUIERDA: CURSOS (Lo principal) */}
+        <div className={styles.leftColumn}>
+          {/* Caja Compacta para Unirse */}
+          <div className={styles.joinSection}>
+            <h3 className={styles.sectionTitle} style={{ fontSize: "1rem" }}>
+              🔗 Unirse a una nueva clase
+            </h3>
+            <form onSubmit={handleUnirse} className={styles.joinForm}>
+              <input
+                type="text"
+                placeholder="Ingresa el código (ej. 7Y8J8Q)"
+                className={styles.joinInput}
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+                maxLength={6}
+              />
+              <button
+                type="submit"
+                className={styles.joinBtn}
+                disabled={loadingJoin}
               >
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <div className={styles.iconCheck}>✅</div>
-                  <div className={styles.taskInfo}>
-                    <span
-                      className={styles.taskTitle}
-                      style={{ color: "var(--success)" }}
-                    >
-                      {task.nombre_evaluacion}
+                {loadingJoin ? "..." : "Unirse"}
+              </button>
+            </form>
+          </div>
+
+          <h2 className={styles.sectionTitle}>📚 Mis Cursos</h2>
+
+          {inscripciones.length === 0 ? (
+            <div
+              className={styles.emptyState}
+              style={{ border: "2px dashed #ccc", borderRadius: "8px" }}
+            >
+              No estás inscrito en ningún curso aún. ¡Usa el código de arriba!
+            </div>
+          ) : (
+            <div className={styles.coursesGrid}>
+              {inscripciones.map((curso) => (
+                <Link
+                  to={`/clase/${curso.id}`}
+                  key={curso.id}
+                  className={styles.courseCard}
+                >
+                  <div className={styles.courseBanner}></div>
+                  <div className={styles.courseContent}>
+                    <span className={styles.courseName}>
+                      {curso.nombre_clase}
                     </span>
-                    <span className={styles.taskMeta}>{task.nombre_clase}</span>
+                    <div className={styles.courseTeacher}>
+                      👨‍🏫 {curso.nombre_docente}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* COLUMNA DERECHA: AGENDA (Tareas) */}
+        <div className={styles.rightColumn}>
+          <div className={styles.tasksCard}>
+            <h3
+              className={styles.sectionTitle}
+              style={{ marginBottom: "1rem" }}
+            >
+              🔥 Próximas Entregas
+            </h3>
+
+            <div className={styles.taskList}>
+              {pendientes.length === 0 ? (
+                <p className={styles.emptyState}>
+                  ¡Todo al día! No hay tareas pendientes.
+                </p>
+              ) : (
+                pendientes.slice(0, 5).map((tarea) => {
+                  // Solo mostramos las 5 primeras
+                  const fecha = tarea.fecha_fin
+                    ? moment(tarea.fecha_fin)
+                    : null;
+                  const esUrgente = fecha && fecha.diff(moment(), "days") < 3;
+
+                  return (
+                    <Link
+                      to={`/evaluacion/${tarea.id}`}
+                      key={tarea.id}
+                      className={styles.taskRow}
+                    >
+                      <div className={styles.taskInfo}>
+                        <span className={styles.taskTitle}>
+                          {tarea.nombre_evaluacion}
+                        </span>
+                        <span className={styles.taskCourse}>
+                          {tarea.nombre_clase}
+                        </span>
+                      </div>
+                      <span
+                        className={`${styles.taskDate} ${
+                          esUrgente ? styles.urgent : ""
+                        }`}
+                      >
+                        {fecha ? fecha.format("D MMM") : "Sin fecha"}
+                      </span>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Link al calendario completo */}
+            <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
+              <Link
+                to="/calendario"
+                style={{
+                  color: "#1a73e8",
+                  textDecoration: "none",
+                  fontSize: "0.9rem",
+                  fontWeight: "600",
+                }}
+              >
+                Ver Calendario Completo →
+              </Link>
+            </div>
+          </div>
+
+          {/* Historial Resumido (Opcional, más pequeño abajo) */}
+          <div className={styles.tasksCard} style={{ marginTop: "2rem" }}>
+            <h3
+              className={styles.sectionTitle}
+              style={{ marginBottom: "1rem" }}
+            >
+              ✅ Historial Reciente
+            </h3>
+            <div className={styles.taskList}>
+              {entregadas.slice(0, 3).map((tarea) => (
+                <div
+                  key={tarea.id}
+                  className={styles.taskRow}
+                  style={{ cursor: "default" }}
+                >
+                  <div className={styles.taskInfo}>
+                    <span className={styles.taskTitle}>
+                      {tarea.nombre_evaluacion}
+                    </span>
+                    <span
+                      className={styles.taskCourse}
+                      style={{ color: "#34a853", fontWeight: "bold" }}
+                    >
+                      {tarea.nota ? `Nota: ${tarea.nota}` : "Entregada"}
+                    </span>
                   </div>
                 </div>
-
-                {/* Si tiene nota, la mostramos */}
-                {task.nota ? (
-                  <div
-                    style={{
-                      background: "#E8F0FE",
-                      color: "#1A73E8",
-                      padding: "5px 10px",
-                      borderRadius: "8px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {task.nota}
-                  </div>
-                ) : (
-                  <span className={styles.taskDate}>
-                    Entregado: {formatDate(task.fecha_entrega)}
-                  </span>
-                )}
-              </Link>
-            ))}
+              ))}
+            </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

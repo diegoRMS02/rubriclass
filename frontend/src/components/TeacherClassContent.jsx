@@ -3,190 +3,221 @@ import axios from "axios";
 import styles from "./TeacherClassContent.module.css";
 
 function TeacherClassContent({ claseId, modulos, onUpdate }) {
-  const [newModuleTitle, setNewModuleTitle] = useState("");
-  const [isCreatingModule, setIsCreatingModule] = useState(false);
-  const [uploadingModuleId, setUploadingModuleId] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [nombreModulo, setNombreModulo] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleCreateModule = async () => {
-    if (!newModuleTitle.trim()) return;
+  // --- CREAR MÓDULO ---
+  const handleCreateModule = async (e) => {
+    e.preventDefault();
+    if (!nombreModulo.trim()) return;
+
+    setLoading(true);
     try {
       await axios.post("/api/modulos", {
         clase_id: claseId,
-        titulo: newModuleTitle,
+        titulo: nombreModulo,
       });
-      setNewModuleTitle("");
-      setIsCreatingModule(false);
+      setNombreModulo("");
+      setIsCreating(false);
       onUpdate();
     } catch (error) {
-      alert("Error al crear módulo");
+      console.error("Error creando módulo", error);
+      alert("Error al crear el módulo");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpload = async (moduloId, file) => {
+  // --- SUBIR ARCHIVO ---
+  const handleFileUpload = async (moduloId, file) => {
     if (!file) return;
-    setUploadingModuleId(moduloId);
+
+    // Usamos el nombre original para el título
     const formData = new FormData();
     formData.append("archivo", file);
-    formData.append("titulo", file.name);
+    formData.append("modulo_id", moduloId);
     formData.append("tipo", "archivo");
 
     try {
-      await axios.post(`/api/modulos/${moduloId}/recursos`, formData, {
+      // Feedback visual simple (puedes mejorarlo con un toast)
+      const btn = document.getElementById(`upload-label-${moduloId}`);
+      if (btn) btn.innerText = "⏳ Subiendo...";
+
+      await axios.post("/api/recursos", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       onUpdate();
     } catch (error) {
-      alert("Error al subir archivo");
-    } finally {
-      setUploadingModuleId(null);
+      console.error("Error subiendo archivo", error);
+      alert("Error al subir el archivo.");
     }
   };
 
-  // --- NUEVA FUNCIÓN: ELIMINAR RECURSO ---
-  const handleDeleteResource = async (recursoId) => {
-    if (!window.confirm("¿Seguro que quieres eliminar este archivo?")) return;
+  // --- ELIMINAR RECURSO (NUEVO) ---
+  const handleDeleteResource = async (recursoId, titulo) => {
+    if (
+      !window.confirm(
+        `¿Estás seguro de eliminar el archivo "${cleanFileName(titulo)}"?`
+      )
+    )
+      return;
+
     try {
-      await axios.delete(`/api/modulos/recursos/${recursoId}`);
-      onUpdate();
+      await axios.delete(`/api/recursos/${recursoId}`);
+      onUpdate(); // Recargar la lista
     } catch (error) {
       console.error(error);
-      alert("Error al eliminar el recurso");
+      alert("No se pudo eliminar el archivo.");
     }
+  };
+
+  // --- HELPER: Limpiar nombre feo (UUID) ---
+  const cleanFileName = (title) => {
+    if (!title) return "Archivo sin nombre";
+    // Si tiene un UUID al inicio (36 chars + guion), lo cortamos
+    if (title.length > 37 && title.charAt(36) === "-") {
+      return title.substring(37);
+    }
+    return title;
   };
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Contenido del Curso</h2>
-        <button
-          className={styles.addModuleBtn}
-          onClick={() => setIsCreatingModule(!isCreatingModule)}
+      {/* --- ZONA DE CREACIÓN --- */}
+      {!isCreating ? (
+        <div
+          className={`${styles.creationCard} ${styles.collapsed}`}
+          onClick={() => setIsCreating(true)}
         >
-          + Nuevo Módulo
-        </button>
-      </div>
-
-      {isCreatingModule && (
-        <div style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
-          <input
-            type="text"
-            value={newModuleTitle}
-            onChange={(e) => setNewModuleTitle(e.target.value)}
-            placeholder="Nombre del módulo (ej. Semana 1)"
-            style={{
-              flex: 1,
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "6px",
-            }}
-          />
-          <button
-            onClick={handleCreateModule}
-            style={{
-              background: "#10B981",
-              color: "white",
-              border: "none",
-              padding: "8px 16px",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            Guardar
+          <button className={styles.expandBtn}>
+            <span>➕</span> Crear Nuevo Módulo / Semana
           </button>
+        </div>
+      ) : (
+        <div className={styles.creationCard}>
+          <h3 className={styles.formTitle}>Nuevo Módulo</h3>
+          <form onSubmit={handleCreateModule}>
+            <div className={styles.inputGroup}>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Nombre del módulo (Ej: Semana 1: Introducción)"
+                value={nombreModulo}
+                onChange={(e) => setNombreModulo(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className={styles.actionButtons}>
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={() => setIsCreating(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className={styles.saveBtn}
+                disabled={!nombreModulo.trim() || loading}
+              >
+                {loading ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
+      {/* --- LISTA DE MÓDULOS --- */}
       <div className={styles.moduleList}>
-        {modulos.length === 0 && (
-          <p
-            style={{ color: "#666", textAlign: "center", fontStyle: "italic" }}
+        {modulos.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              color: "#888",
+              padding: "3rem",
+              border: "2px dashed #e0e0e0",
+              borderRadius: "8px",
+              background: "white",
+            }}
           >
-            No hay contenido creado aún.
-          </p>
-        )}
+            <div style={{ fontSize: "2rem", marginBottom: "10px" }}>📂</div>
+            <p>No hay contenido. ¡Crea tu primer módulo arriba! 👆</p>
+          </div>
+        ) : (
+          modulos.map((modulo) => (
+            <div key={modulo.id} className={styles.moduleCard}>
+              <div className={styles.moduleHeader}>
+                <h3 className={styles.moduleTitle}>{modulo.titulo}</h3>
+              </div>
 
-        {modulos.map((modulo) => (
-          <div key={modulo.id} className={styles.moduleCard}>
-            <div className={styles.moduleHeader}>
-              <span className={styles.moduleTitle}>{modulo.titulo}</span>
-            </div>
-
-            <div className={styles.moduleContent}>
-              <ul className={styles.resourceList}>
+              <div className={styles.resourceList}>
                 {modulo.recursos &&
-                  modulo.recursos.map((recurso) => (
-                    <li key={recurso.id} className={styles.resourceItem}>
-                      <span className={styles.resourceIcon}>
-                        {recurso.tipo === "archivo" ? "📄" : "🔗"}
-                      </span>
-                      <div className={styles.resourceInfo}>
-                        <a
-                          href={recurso.url_publica || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.resourceLink}
+                  modulo.recursos.map((rec) => (
+                    <div key={rec.id} className={styles.resourceItem}>
+                      {/* Enlace / Archivo */}
+                      <a
+                        href={rec.url_publica}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.resourceLink}
+                      >
+                        <span
+                          style={{ fontSize: "1.2rem", marginRight: "10px" }}
                         >
-                          {recurso.titulo}
-                        </a>
-                      </div>
+                          {rec.tipo === "archivo" ? "📄" : "🔗"}
+                        </span>
+                        {cleanFileName(rec.titulo)}
+                      </a>
 
-                      {/* BOTÓN DE ELIMINAR */}
+                      {/* Botón de Eliminar (NUEVO) */}
                       <button
-                        onClick={() => handleDeleteResource(recurso.id)}
-                        className={styles.deleteBtn}
-                        title="Eliminar recurso"
+                        className={styles.deleteResourceBtn}
+                        onClick={() => handleDeleteResource(rec.id, rec.titulo)}
+                        title="Eliminar archivo"
                       >
                         🗑️
                       </button>
-                    </li>
+                    </div>
                   ))}
                 {(!modulo.recursos || modulo.recursos.length === 0) && (
-                  <li
+                  <p
                     style={{
-                      color: "#9ca3af",
+                      padding: "0 1.5rem",
+                      color: "#999",
                       fontSize: "0.9rem",
-                      padding: "10px",
                       fontStyle: "italic",
                     }}
                   >
-                    Carpeta vacía
-                  </li>
-                )}
-              </ul>
-
-              <div className={styles.uploadForm}>
-                <span
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: "500",
-                    color: "#4b5563",
-                  }}
-                >
-                  Añadir archivo:
-                </span>
-                <input
-                  type="file"
-                  className={styles.fileInput}
-                  onChange={(e) => handleUpload(modulo.id, e.target.files[0])}
-                  disabled={uploadingModuleId === modulo.id}
-                />
-                {uploadingModuleId === modulo.id && (
-                  <span
-                    style={{
-                      fontSize: "0.8rem",
-                      color: "#1A73E8",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Subiendo...
-                  </span>
+                    Carpeta vacía.
+                  </p>
                 )}
               </div>
+
+              {/* Dropzone */}
+              <div className={styles.dropZone}>
+                <label
+                  id={`upload-label-${modulo.id}`}
+                  style={{ cursor: "pointer", display: "block", width: "100%" }}
+                >
+                  <input
+                    type="file"
+                    style={{ display: "none" }}
+                    onChange={(e) =>
+                      handleFileUpload(modulo.id, e.target.files[0])
+                    }
+                  />
+                  <span>
+                    📂 Agregar archivo a <strong>{modulo.titulo}</strong>
+                  </span>
+                </label>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
 }
+
 export default TeacherClassContent;
