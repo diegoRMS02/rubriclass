@@ -105,3 +105,77 @@
     z-index: 40;
   }
 }
+
+/* Perfil de Usuario (Abajo) */
+.userSection {
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+  background-color: #fafafa; /* Un fondo sutil para diferenciarlo */
+}
+
+.userHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+
+.avatarPlaceholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.userRole {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.logoutBtn:hover {
+  background-color: #fee2e2;
+  color: var(--danger);
+  border-color: #fecaca;
+}
