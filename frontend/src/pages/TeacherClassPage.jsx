@@ -51,7 +51,7 @@ function TeacherClassPage() {
 
   // Handler para cuando se guarda la edición
   const handleEditSuccess = () => {
-    fetchData(); // Recargamos para ver el nuevo nombre/horario
+    fetchData(); // Recargamos para ver el nuevo nombre/horario/link
     setIsEditModalOpen(false);
   };
 
@@ -85,6 +85,19 @@ function TeacherClassPage() {
           <div className={styles.codeBadge}>
             Código: <strong>{clase.codigo_inscripcion}</strong>
           </div>
+
+          {/* --- BOTÓN DE MEET (NUEVO) --- */}
+          {/* Solo se muestra si el docente configuró un link */}
+          {clase.meet_link && (
+            <a
+              href={clase.meet_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.meetBtn}
+            >
+              <span>📹</span> Unirse a la Clase en Vivo
+            </a>
+          )}
         </div>
       </div>
 

@@ -98,14 +98,16 @@ router.post("/", [isAuthenticated, isTeacher], async (req, res) => {
 // --- RUTA PARA EDITAR CLASE (PUT) ---
 router.put("/:id", [isAuthenticated, isTeacher], async (req, res) => {
   const { id } = req.params;
-  const { nombre_clase, seccion, dias, hora_inicio, hora_fin } = req.body;
+  // Agregamos meet_link al destructuring
+  const { nombre_clase, seccion, dias, hora_inicio, hora_fin, meet_link } =
+    req.body;
 
   try {
     const updateQuery = await db.query(
       `UPDATE Clases 
-       SET nombre_clase = $1, seccion = $2, dias = $3, hora_inicio = $4, hora_fin = $5
-       WHERE id = $6 RETURNING *`,
-      [nombre_clase, seccion, dias, hora_inicio, hora_fin, id]
+       SET nombre_clase = $1, seccion = $2, dias = $3, hora_inicio = $4, hora_fin = $5, meet_link = $6
+       WHERE id = $7 RETURNING *`,
+      [nombre_clase, seccion, dias, hora_inicio, hora_fin, meet_link, id]
     );
 
     if (updateQuery.rows.length === 0) {

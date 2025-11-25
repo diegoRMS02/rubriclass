@@ -18,20 +18,16 @@ function StudentClassPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Estado de Pestañas (Por defecto 'novedades')
   const [activeTab, setActiveTab] = useState("novedades");
 
   const fetchData = useCallback(async () => {
     try {
-      // 1. Datos de la Clase
       const claseRes = await axios.get(`/api/clases/${id}`);
       setClase(claseRes.data);
 
-      // 2. Contenido del Curso
       const contenidoRes = await axios.get(`/api/clases/${id}/contenido`);
       setContenido(contenidoRes.data);
 
-      // 3. Perfil actual
       const profileRes = await axios.get("/api/auth/profile");
       setCurrentUser(profileRes.data);
     } catch (error) {
@@ -45,12 +41,8 @@ function StudentClassPage() {
     fetchData();
   }, [fetchData]);
 
-  // Función auxiliar para limpiar el nombre del archivo si tiene UUID pegado
-  // (Ej: "uuid-uuid-miarchivo.pdf" -> "miarchivo.pdf")
   const cleanFileName = (title) => {
     if (!title) return "Archivo sin nombre";
-    // Si parece tener un UUID al principio (aprox 36 chars + guion), intentamos cortarlo
-    // Esto es un parche visual, lo ideal es guardar el nombre limpio en BD.
     if (title.length > 37 && title.charAt(36) === "-") {
       return title.substring(37);
     }
@@ -79,23 +71,33 @@ function StudentClassPage() {
           </span>{" "}
           Docente: {clase.nombre_docente}
         </div>
+
+        {/* --- BOTÓN DE CLASE EN VIVO --- */}
+        {clase.meet_link && (
+          <a
+            href={clase.meet_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.meetBtn}
+          >
+            <span>📹</span> Unirse a la Clase en Vivo
+          </a>
+        )}
       </div>
 
-      {/* --- TABS DE NAVEGACIÓN --- */}
+      {/* --- TABS --- */}
       <ClassTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* --- CONTENIDO DINÁMICO --- */}
+      {/* --- CONTENIDO --- */}
       <div className={styles.tabContent}>
-        {/* PESTAÑA 1: NOVEDADES */}
         {activeTab === "novedades" && (
           <AnnouncementFeed
             classId={clase.id}
             user={currentUser}
-            isTeacher={false} // Solo lectura
+            isTeacher={false}
           />
         )}
 
-        {/* PESTAÑA 2: TRABAJO DE CLASE */}
         {activeTab === "contenido" && (
           <div className={styles.modulesContainer}>
             {contenido.length === 0 ? (
@@ -115,14 +117,11 @@ function StudentClassPage() {
                         href={rec.url_publica}
                         target="_blank"
                         rel="noreferrer"
-                        className={styles.resourceItem} // Estilo de tarjeta
+                        className={styles.resourceItem}
                       >
-                        {/* Icono Visual */}
                         <div className={styles.resourceIcon}>
                           {rec.tipo === "archivo" ? "📄" : "🔗"}
                         </div>
-
-                        {/* Info del Archivo */}
                         <div className={styles.resourceInfo}>
                           <span className={styles.resourceTitle}>
                             {cleanFileName(rec.titulo)}
@@ -154,7 +153,6 @@ function StudentClassPage() {
           </div>
         )}
 
-        {/* PESTAÑA 3: PERSONAS */}
         {activeTab === "personas" && (
           <ClassPeople classId={clase.id} isTeacher={false} />
         )}

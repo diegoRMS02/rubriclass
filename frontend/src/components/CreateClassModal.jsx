@@ -17,12 +17,12 @@ function CreateClassModal({ onClose, onSuccess, classToEdit = null }) {
     seccion: "",
     hora_inicio: "",
     hora_fin: "",
+    meet_link: "", // <--- NUEVO CAMPO
   });
   const [selectedDays, setSelectedDays] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Cargar datos si es edición
   useEffect(() => {
     if (classToEdit) {
       setFormData({
@@ -30,6 +30,7 @@ function CreateClassModal({ onClose, onSuccess, classToEdit = null }) {
         seccion: classToEdit.seccion || "",
         hora_inicio: classToEdit.hora_inicio || "",
         hora_fin: classToEdit.hora_fin || "",
+        meet_link: classToEdit.meet_link || "", // <--- CARGAR LINK SI EXISTE
       });
       if (classToEdit.dias) {
         setSelectedDays(classToEdit.dias.split(", ").filter(Boolean));
@@ -55,16 +56,12 @@ function CreateClassModal({ onClose, onSuccess, classToEdit = null }) {
     setError("");
 
     try {
-      // PREPARAR DATOS
       const diasString = selectedDays.join(", ");
       const payload = { ...formData, dias: diasString };
 
-      // ENVIAR PETICIÓN (Sin headers manuales, Axios usa cookies automáticamente)
       if (classToEdit) {
-        // MODO EDICIÓN
         await axios.put(`/api/clases/${classToEdit.id}`, payload);
       } else {
-        // MODO CREACIÓN
         await axios.post("/api/clases", payload);
       }
 
@@ -72,10 +69,7 @@ function CreateClassModal({ onClose, onSuccess, classToEdit = null }) {
     } catch (err) {
       console.error(err);
       if (err.response && err.response.status === 401) {
-        // Si da 401 es porque la sesión en el servidor caducó
-        setError(
-          "Tu sesión expiró. Por favor recarga la página e inicia sesión."
-        );
+        setError("Tu sesión expiró. Por favor recarga la página.");
       } else {
         setError(err.response?.data?.message || "Error al guardar la clase.");
       }
@@ -92,7 +86,7 @@ function CreateClassModal({ onClose, onSuccess, classToEdit = null }) {
             <span role="img" aria-label="libros">
               📚
             </span>{" "}
-            {classToEdit ? "Editar Clase" : "Crear Nueva Clase"}
+            {classToEdit ? "Configuración de Clase" : "Crear Nueva Clase"}
           </h2>
           <button className={styles.closeBtn} onClick={onClose}>
             &times;
@@ -126,6 +120,42 @@ function CreateClassModal({ onClose, onSuccess, classToEdit = null }) {
                 }
               />
             </div>
+          </div>
+
+          {/* --- NUEVO CAMPO: GOOGLE MEET --- */}
+          <div className={styles.group}>
+            <label htmlFor="meet_link">
+              Enlace de Videollamada (Google Meet / Zoom)
+            </label>
+            <div style={{ position: "relative" }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: "10px",
+                  top: "12px",
+                  fontSize: "1.2rem",
+                }}
+              >
+                📹
+              </span>
+              <input
+                id="meet_link"
+                type="url"
+                placeholder="https://meet.google.com/abc-defg-hij"
+                value={formData.meet_link}
+                onChange={(e) =>
+                  setFormData({ ...formData, meet_link: e.target.value })
+                }
+                className={styles.timeInput} // Reusamos estilo para que se vea bien
+                style={{ paddingLeft: "40px" }}
+              />
+            </div>
+            <small
+              style={{ color: "#666", fontSize: "0.8rem", marginTop: "5px" }}
+            >
+              Pega aquí tu link recurrente. Aparecerá un botón para unirse en la
+              clase.
+            </small>
           </div>
 
           <div className={styles.group}>
@@ -188,11 +218,7 @@ function CreateClassModal({ onClose, onSuccess, classToEdit = null }) {
               disabled={loading}
               className={styles.submitBtn}
             >
-              {loading
-                ? "Guardando..."
-                : classToEdit
-                ? "Actualizar"
-                : "Guardar Clase"}
+              {loading ? "Guardando..." : "Guardar Cambios"}
             </button>
           </div>
         </form>
