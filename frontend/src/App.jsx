@@ -7,7 +7,8 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import EvaluationPage from "./pages/EvaluationPage";
 import TeacherGradingPage from "./pages/TeacherGradingPage";
-import StudentClassPage from "./pages/StudentClassPage"; // <-- IMPORTAMOS LA NUEVA PÁGINA
+import StudentClassPage from "./pages/StudentClassPage";
+import TeacherClassPage from "./pages/TeacherClassPage";
 
 // Importamos el Layout Principal
 import MainLayout from "./layout/MainLayout";
@@ -42,7 +43,7 @@ function App() {
 
   return (
     <Routes>
-      {/* Ruta 1: La raíz ("/") - Dashboard */}
+      {/* Ruta 1: Dashboard Principal */}
       <Route
         path="/"
         element={
@@ -56,13 +57,13 @@ function App() {
         }
       />
 
-      {/* Ruta 2: La página de Login ("/login") - SIN LAYOUT */}
+      {/* Ruta 2: Login */}
       <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <LoginPage />}
       />
 
-      {/* Ruta 3: Página de Evaluación (Para el Estudiante) */}
+      {/* Ruta 3: Evaluación (Estudiante) */}
       <Route
         path="/evaluacion/:id"
         element={
@@ -76,7 +77,7 @@ function App() {
         }
       />
 
-      {/* Ruta 4: Panel de Calificación (Solo para Docentes) */}
+      {/* Ruta 4: Calificación (Docente) */}
       <Route
         path="/docente/evaluacion/:id"
         element={
@@ -90,7 +91,7 @@ function App() {
         }
       />
 
-      {/* Ruta 5: Aula Virtual del Curso (Solo para Estudiantes) */}
+      {/* Ruta 5: Aula Virtual (Estudiante) - ¡ESTA ES LA CLAVE! */}
       <Route
         path="/clase/:id"
         element={
@@ -100,6 +101,20 @@ function App() {
             </MainLayout>
           ) : (
             <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      {/* Ruta 6: Gestión de Clase (Docente) */}
+      <Route
+        path="/docente/clase/:id"
+        element={
+          user && user.rol === "docente" ? (
+            <MainLayout user={user}>
+              <TeacherClassPage />
+            </MainLayout>
+          ) : (
+            <Navigate to="/" replace />
           )
         }
       />

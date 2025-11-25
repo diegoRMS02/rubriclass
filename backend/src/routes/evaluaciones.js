@@ -4,7 +4,7 @@ const { isAuthenticated, isTeacher } = require("../middleware/auth");
 const multer = require("multer");
 const { bucket } = require("../firebase-config");
 const { v4: uuidv4 } = require("uuid");
-const xlsx = require("xlsx"); // <-- Importamos la librería de Excel
+const xlsx = require("xlsx");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -219,7 +219,7 @@ router.get("/:id/entrega", isAuthenticated, async (req, res) => {
   }
 });
 
-// --- 6. Ruta para que el ESTUDIANTE vea UNA evaluación (el "examen") ---
+// --- 6. Ruta para que el ESTUDIANTE vea UNA evaluación ---
 router.get("/:id", isAuthenticated, async (req, res) => {
   const { id: idString } = req.params;
   const id = parseInt(idString, 10);
@@ -273,7 +273,7 @@ router.get("/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// --- 7. Ruta para que el ESTUDIANTE ENTREGUE o MODIFIQUE su tarea ---
+// --- 7. Ruta para ENTREGAR evaluación ---
 router.post(
   "/:id/entregar",
   isAuthenticated,
@@ -344,7 +344,6 @@ router.post(
         const nombreArchivoUnico = `${uuidv4()}-${archivo.originalname}`;
         const rutaArchivoEnFirebase = `entregas/${nombreArchivoUnico}`;
         const fileUpload = bucket.file(rutaArchivoEnFirebase);
-
         const blobStream = fileUpload.createWriteStream({
           metadata: { contentType: archivo.mimetype },
         });
@@ -390,7 +389,7 @@ router.post(
   }
 );
 
-// --- 8. Ruta para que el DOCENTE vea las entregas de una evaluación ---
+// --- 8. Ruta para que el DOCENTE vea las entregas ---
 router.get(
   "/:id/entregas_docente",
   [isAuthenticated, isTeacher],
@@ -423,7 +422,7 @@ router.get(
   }
 );
 
-// --- 9. Ruta para que el DOCENTE califique una entrega ---
+// --- 9. Ruta para que el DOCENTE califique ---
 router.post(
   "/:entregaId/calificar",
   [isAuthenticated, isTeacher],
@@ -481,7 +480,7 @@ router.post(
   }
 );
 
-// --- 10. Ruta para que el DOCENTE vea los detalles de una entrega ---
+// --- 10. Ruta para ver detalles de entrega ---
 router.get(
   "/entregas/:entregaId/detalles",
   [isAuthenticated, isTeacher],
@@ -544,12 +543,11 @@ router.get(
   }
 );
 
-// --- 11. (NUEVA) Ruta para EXPORTAR las notas a Excel ---
+// --- 11. Ruta para EXPORTAR notas ---
 router.get("/:id/exportar", [isAuthenticated, isTeacher], async (req, res) => {
   const { id: evaluacion_id } = req.params;
 
   try {
-    // 1. Obtener datos de la evaluación
     const evalResult = await db.query(
       "SELECT nombre_evaluacion FROM Evaluaciones WHERE id = $1",
       [evaluacion_id]
@@ -558,7 +556,6 @@ router.get("/:id/exportar", [isAuthenticated, isTeacher], async (req, res) => {
       return res.status(404).send("Evaluación no encontrada");
     const nombreEvaluacion = evalResult.rows[0].nombre_evaluacion;
 
-    // 2. Obtener lista de alumnos y sus notas
     const reporteQuery = await db.query(
       `SELECT 
          u.nombre_completo as "Estudiante",
@@ -578,25 +575,18 @@ router.get("/:id/exportar", [isAuthenticated, isTeacher], async (req, res) => {
     );
 
     const datos = reporteQuery.rows;
-
-    // 3. Generar Excel con la librería 'xlsx'
     const workbook = xlsx.utils.book_new();
     const worksheet = xlsx.utils.json_to_sheet(datos);
-
-    // Ajustar ancho de columnas (opcional)
     const wscols = [
-      { wch: 30 }, // Nombre
-      { wch: 30 }, // Correo
-      { wch: 15 }, // Estado
-      { wch: 20 }, // Fecha
-      { wch: 10 }, // Nota
-      { wch: 50 }, // Comentarios
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 10 },
+      { wch: 50 },
     ];
     worksheet["!cols"] = wscols;
-
     xlsx.utils.book_append_sheet(workbook, worksheet, "Resultados");
-
-    // 4. Enviar el archivo al cliente (navegador)
     const buffer = xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
 
     res.setHeader(
@@ -611,6 +601,31 @@ router.get("/:id/exportar", [isAuthenticated, isTeacher], async (req, res) => {
   } catch (error) {
     console.error("Error al exportar notas:", error);
     res.status(500).send("Error al generar el reporte.");
+  }
+});
+
+// --- 12. (NUEVA RUTA) Obtener evaluaciones por CLASE ---
+router.get("/clase/:claseId", isAuthenticated, async (req, res) => {
+  const { claseId } = req.params;
+  const usuario_id = req.user.id;
+
+  try {
+    const query = `
+            SELECT 
+                e.id, e.nombre_evaluacion, e.fecha_fin, e.tipo_evaluacion,
+                ent.id as entrega_id, ent.fecha_entrega,
+                cal.nota
+            FROM Evaluaciones e
+            LEFT JOIN Entregas ent ON e.id = ent.evaluacion_id AND ent.usuario_id = $1
+            LEFT JOIN Calificaciones cal ON ent.id = cal.entrega_id
+            WHERE e.clase_id = $2
+            ORDER BY e.fecha_creacion DESC
+        `;
+    const result = await db.query(query, [usuario_id, claseId]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener evaluaciones de la clase:", error);
+    res.status(500).json({ message: "Error interno." });
   }
 });
 

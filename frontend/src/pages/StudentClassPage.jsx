@@ -3,269 +3,144 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { format } from "date-fns";
 import { es } from "date-fns/locale/es";
+import styles from "./StudentClassPage.module.css";
 
 function StudentClassPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [clase, setClase] = useState(null);
   const [evaluaciones, setEvaluaciones] = useState([]);
+  const [contenido, setContenido] = useState([]); // <-- Aquí guardaremos los módulos y archivos
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Necesitamos una API para obtener los datos de UNA clase (aún no la tenemos, la simularemos)
-        // Y las evaluaciones de ESA clase.
-        // POR AHORA: Usaremos las APIs existentes filtrando en el frontend (temporalmente)
-
-        // 1. Obtener info de la clase (usando la lista de inscripciones)
-        const clasesRes = await axios.get("/api/clases/inscripciones");
-        const miClase = clasesRes.data.find((c) => c.id === parseInt(id));
-
-        if (!miClase) {
-          alert("No estás inscrito en esta clase");
-          navigate("/");
-          return;
-        }
-        setClase(miClase);
-
-        // 2. Obtener TODAS las evaluaciones (pendientes y entregadas) y filtrar por clase
-        // NOTA: Lo ideal sería crear una API backend específica: GET /api/evaluaciones/clase/:id
-        // Pero para avanzar rápido, llamamos a las dos y filtramos.
-        const [pendientesRes, entregadasRes] = await Promise.all([
-          axios.get("/api/evaluaciones/pendientes"),
-          axios.get("/api/evaluaciones/entregadas"),
+        // 1. Pedimos TODA la información en paralelo
+        const [claseRes, evalsRes, contentRes] = await Promise.all([
+          axios.get(`/api/clases/${id}`),
+          axios.get(`/api/evaluaciones/clase/${id}`),
+          axios.get(`/api/clases/${id}/contenido`), // <-- Esta es la clave: pedimos los recursos
         ]);
 
-        // Combinamos y filtramos
-        const todas = [
-          ...pendientesRes.data.map((e) => ({ ...e, estado: "pendiente" })),
-          ...entregadasRes.data.map((e) => ({ ...e, estado: "entregado" })),
-        ].filter((e) => e.nombre_clase === miClase.nombre_clase); // Filtramos por nombre (o ID si lo tuviéramos en la respuesta)
-
-        setEvaluaciones(todas);
+        setClase(claseRes.data);
+        setEvaluaciones(evalsRes.data);
+        setContenido(contentRes.data); // Guardamos los módulos en el estado
       } catch (error) {
         console.error(error);
+        navigate("/");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [id]);
+  }, [id, navigate]);
 
-  if (loading) return <div>Cargando aula...</div>;
+  if (loading)
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        Cargando aula...
+      </div>
+    );
   if (!clase) return null;
 
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "20px" }}>
-      {/* Banner del Curso */}
-      <div
-        style={{
-          background: "#1a73e8",
-          color: "white",
-          padding: "40px",
-          borderRadius: "16px",
-          marginBottom: "30px",
-          boxShadow: "0 4px 12px rgba(26, 115, 232, 0.2)",
-        }}
-      >
-        <button
-          onClick={() => navigate("/")}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "white",
-            cursor: "pointer",
-            marginBottom: "10px",
-          }}
-        >
-          ← Volver
+    <div className={styles.container}>
+      {/* Banner */}
+      <div className={styles.banner}>
+        <button onClick={() => navigate("/")} className={styles.backBtn}>
+          ← Mis Cursos
         </button>
-        <h1 style={{ margin: 0, fontSize: "2.5rem" }}>{clase.nombre_clase}</h1>
-        <p style={{ opacity: 0.9, marginTop: "10px" }}>
-          Docente: {clase.nombre_docente}
-        </p>
+        <h1 className={styles.courseTitle}>{clase.nombre_clase}</h1>
+        <p className={styles.docente}>Docente: {clase.nombre_docente}</p>
       </div>
 
-      {/* Grid de Secciones */}
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "30px" }}
-      >
+      <div className={styles.layoutGrid}>
         {/* COLUMNA IZQUIERDA: Recursos y Meet */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className={styles.leftColumn}>
           {/* Tarjeta de Clase Virtual */}
-          <div
-            style={{
-              background: "white",
-              padding: "20px",
-              borderRadius: "12px",
-              border: "1px solid #eee",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-            }}
-          >
-            <h3
-              style={{
-                marginTop: 0,
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-              📹 Clase Virtual
-            </h3>
-            <p style={{ fontSize: "0.9rem", color: "#666" }}>
-              Enlace permanente a la sala.
-            </p>
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>📹 Clase Virtual</h3>
             <button
-              style={{
-                width: "100%",
-                padding: "10px",
-                background: "#1a73e8",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                marginTop: "10px",
-              }}
+              className={styles.meetBtn}
+              onClick={() => alert("Integración Meet próximamente")}
             >
-              Unirse a la reunión
+              Unirse a la Reunión
             </button>
           </div>
 
-          {/* Tarjeta de Recursos */}
-          <div
-            style={{
-              background: "white",
-              padding: "20px",
-              borderRadius: "12px",
-              border: "1px solid #eee",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>📂 Recursos</h3>
-            <ul style={{ listStyle: "none", padding: 0 }}>
-              <li
-                style={{
-                  padding: "10px",
-                  borderBottom: "1px solid #eee",
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                }}
-              >
-                📄 Sílabo del Curso.pdf
-              </li>
-              <li
-                style={{
-                  padding: "10px",
-                  borderBottom: "1px solid #eee",
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                }}
-              >
-                📊 Diapositivas Semana 1.pptx
-              </li>
-              <li
-                style={{
-                  padding: "10px",
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                  color: "#666",
-                  fontStyle: "italic",
-                }}
-              >
-                + Añadir recurso (Solo profe)
-              </li>
-            </ul>
+          {/* --- SECCIÓN DE RECURSOS (DINÁMICA) --- */}
+          <div className={styles.resourcesSection}>
+            <h3 className={styles.sectionTitleSmall}>📂 Material de Clase</h3>
+
+            {contenido.length === 0 ? (
+              <p className={styles.emptyText}>
+                El docente aún no ha subido contenido.
+              </p>
+            ) : (
+              <div className={styles.modulesContainer}>
+                {contenido.map((modulo) => (
+                  <div key={modulo.id} className={styles.moduleCard}>
+                    <h4 className={styles.moduleTitle}>{modulo.titulo}</h4>
+
+                    {modulo.recursos && modulo.recursos.length > 0 ? (
+                      <ul className={styles.resourceList}>
+                        {modulo.recursos.map((recurso) => (
+                          <li key={recurso.id} className={styles.resourceItem}>
+                            <span className={styles.resourceIcon}>
+                              {recurso.tipo === "archivo" ? "📄" : "🔗"}
+                            </span>
+                            <a
+                              href={recurso.url_publica} // <-- URL FIRMADA DE FIREBASE
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.resourceLink}
+                            >
+                              {recurso.titulo}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={styles.emptyModule}>Carpeta vacía.</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* COLUMNA DERECHA: Evaluaciones */}
-        <div>
-          <h2 style={{ marginTop: 0 }}>📝 Evaluaciones y Tareas</h2>
+        <div className={styles.rightColumn}>
+          <h3 className={styles.sectionTitleSmall}>📝 Tareas Pendientes</h3>
+          <div className={styles.evalGrid}>
+            {evaluaciones.length === 0 && (
+              <p className={styles.emptyText}>No hay tareas asignadas.</p>
+            )}
 
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "15px" }}
-          >
-            {evaluaciones.length === 0 && <p>No hay tareas asignadas.</p>}
-
-            {evaluaciones.map((evaluacion) => (
+            {evaluaciones.map((ev) => (
               <Link
-                key={evaluacion.id}
-                to={`/evaluacion/${evaluacion.id}`}
-                style={{ textDecoration: "none", color: "inherit" }}
+                key={ev.id}
+                to={`/evaluacion/${ev.id}`}
+                className={styles.evalCard}
               >
-                <div
-                  style={{
-                    background: "white",
-                    padding: "20px",
-                    borderRadius: "12px",
-                    border: "1px solid #eee",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "15px",
-                    transition: "box-shadow 0.2s",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.boxShadow =
-                      "0 4px 12px rgba(0,0,0,0.1)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.boxShadow = "none")
-                  }
-                >
-                  <div
-                    style={{
-                      width: "50px",
-                      height: "50px",
-                      background:
-                        evaluacion.estado === "entregado"
-                          ? "#e6f4ea"
-                          : "#fef3c7",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.5rem",
-                    }}
-                  >
-                    {evaluacion.estado === "entregado" ? "✅" : "🔥"}
+                <div className={styles.evalIcon}>
+                  {ev.entrega_id ? "✅" : "🔥"}
+                </div>
+                <div className={styles.evalContent}>
+                  <div className={styles.evalHeader}>
+                    <h4>{ev.nombre_evaluacion}</h4>
+                    {ev.nota && (
+                      <span className={styles.gradeBadge}>{ev.nota}</span>
+                    )}
                   </div>
-
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0, fontSize: "1.1rem" }}>
-                      {evaluacion.nombre_evaluacion}
-                    </h3>
-                    <p
-                      style={{
-                        margin: "5px 0 0 0",
-                        fontSize: "0.85rem",
-                        color: "#666",
-                      }}
-                    >
-                      {evaluacion.fecha_fin
-                        ? `Vence: ${format(
-                            new Date(evaluacion.fecha_fin),
-                            "dd MMM",
-                            { locale: es }
-                          )}`
-                        : "Sin fecha límite"}
-                    </p>
+                  <div className={styles.evalMeta}>
+                    {ev.fecha_fin
+                      ? format(new Date(ev.fecha_fin), "dd MMM", { locale: es })
+                      : "Sin fecha"}
                   </div>
-
-                  {evaluacion.nota && (
-                    <div
-                      style={{
-                        background: "#e8f0fe",
-                        color: "#1a73e8",
-                        padding: "5px 10px",
-                        borderRadius: "8px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {evaluacion.nota}
-                    </div>
-                  )}
                 </div>
               </Link>
             ))}

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom"; // Importamos Link
 import styles from "./DashboardTeacher.module.css";
-
-// Componentes (los reutilizamos, pero ahora se ven mejor en el layout)
 import CreateClassForm from "../components/CreateClassForm";
 import UploadRubricForm from "../components/UploadRubricForm";
 import RubricList from "../components/RubricList";
@@ -48,26 +47,36 @@ function DashboardTeacher({ user }) {
 
   return (
     <div className={styles.gridContainer}>
-      {/* COLUMNA IZQUIERDA: Gestión Principal */}
       <div className={styles.mainColumn}>
-        {/* Tarjeta de Clases */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>Mis Clases</h2>
           </div>
 
-          {/* Formulario Integrado (Podemos estilizarlo mejor luego) */}
           <CreateClassForm
             onClassCreated={(c) => setClasses([c, ...classes])}
           />
 
-          <div className={styles.classesGrid} style={{ marginTop: "20px" }}>
+          <div className={styles.classesGrid}>
             {classes.map((clase) => (
               <div key={clase.id} className={styles.classCard}>
-                <span className={styles.className}>{clase.nombre_clase}</span>
+                {/* ENLACE A LA GESTIÓN DE LA CLASE */}
+                <Link
+                  to={`/docente/clase/${clase.id}`}
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
+                  <span
+                    className={styles.className}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {clase.nombre_clase}
+                  </span>
+                </Link>
+
                 <span className={styles.classCode}>
-                  {clase.codigo_inscripcion}
+                  Código: {clase.codigo_inscripcion}
                 </span>
+
                 <button
                   className={styles.assignBtn}
                   onClick={() => handleOpenModal(clase)}
@@ -79,14 +88,12 @@ function DashboardTeacher({ user }) {
           </div>
         </div>
 
-        {/* Tarjeta de Evaluaciones Activas */}
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Evaluaciones Asignadas</h2>
           <EvaluationList evaluations={evaluations} />
         </div>
       </div>
 
-      {/* COLUMNA DERECHA: Herramientas */}
       <div className={styles.sideColumn}>
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Banco de Rúbricas</h2>
@@ -97,7 +104,6 @@ function DashboardTeacher({ user }) {
         </div>
       </div>
 
-      {/* Modal */}
       {isModalOpen && (
         <AssignRubricModal
           clase={selectedClass}

@@ -1,0 +1,205 @@
+.container {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* Botón de Agregar Módulo */
+.addModuleBtn {
+  background: var(--secondary);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.addModuleBtn:hover {
+  background: #eff6ff;
+}
+
+/* Lista de Módulos */
+.moduleList {
+  display: flex;
+  flexdirection: column;
+  gap: 1.5rem;
+}
+
+.moduleCard {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.moduleHeader {
+  background: #f9fafb;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.moduleTitle {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.moduleContent {
+  padding: 1rem;
+}
+
+/* Lista de Recursos */
+.resourceList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resourceItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+.resourceItem:last-child {
+  border-bottom: none;
+}
+
+.resourceIcon {
+  margin-right: 10px;
+  font-size: 1.2rem;
+}
+.resourceLink {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.resourceLink:hover {
+  text-decoration: underline;
+}
+
+/* Formulario de Subida (Pequeño) */
+.uploadForm {
+  margin-top: 1rem;
+  padding: 10px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.fileInput {
+  font-size: 0.85rem;
+}
+
+.uploadBtn {
+  background: var(--text-main);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.uploadBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ... estilos anteriores ... */
+
+.resourceList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flexdirection: column;
+  gap: 8px;
+}
+
+.resourceItem {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #fff;
+  transition: all 0.2s;
+}
+.resourceItem:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.resourceIcon {
+  margin-right: 12px;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+}
+
+.resourceInfo {
+  flex: 1;
+}
+
+.resourceLink {
+  color: var(--text-main);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: block;
+}
+.resourceLink:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+.deleteBtn:hover {
+  background-color: #fee2e2;
+  color: var(--danger);
+}
+
+/* Formulario de subida mejorado */
+.uploadForm {
+  margin-top: 1rem;
+  padding: 15px;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}

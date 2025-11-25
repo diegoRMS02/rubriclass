@@ -1,139 +1,265 @@
 .container {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 2rem 1rem;
 }
 
-/* Banner tipo "Moodle moderno" */
+/* Banner del Curso */
 .banner {
   background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
   color: white;
   padding: 2.5rem;
   border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+  box-shadow: 0 10px 25px -5px rgba(26, 115, 232, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decoración sutil en el banner */
+.banner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image: radial-gradient(
+      circle at 10% 20%,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 20%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 20%
+    );
+  pointer-events: none;
 }
 
 .backBtn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
   cursor: pointer;
-  margin-bottom: 10px;
-  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s;
 }
 .backBtn:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
 .courseTitle {
-  font-size: 2rem;
+  font-size: 2.2rem;
   margin: 0;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
 }
+
 .docente {
   opacity: 0.9;
-  margin-top: 5px;
+  margin-top: 0.5rem;
   font-size: 1.1rem;
+  font-weight: 400;
 }
 
-/* Tarjetas de Acción */
-.quickActions {
+/* Grid Principal (2 columnas) */
+.layoutGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  grid-template-columns: 2fr 1fr; /* Izquierda más ancha para contenido */
+  gap: 2rem;
+  align-items: start;
 }
 
-.actionCard {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1.5rem;
+@media (max-width: 900px) {
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Títulos de Sección */
+.sectionTitleSmall {
+  font-size: 1.25rem;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
-}
-.actionCard:hover {
-  transform: translateY(-3px);
-  border-color: #1a73e8;
+  gap: 8px;
 }
 
-.icon {
-  font-size: 2rem;
-  background: #eff6ff;
-  width: 60px;
-  height: 60px;
+/* --- ESTILOS NUEVOS PARA LOS MÓDULOS (RECURSOS) --- */
+.modulesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.moduleCard {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+.moduleCard:hover {
+  box-shadow: var(--shadow);
+}
+
+.moduleTitle {
+  background: #f9fafb;
+  padding: 12px 16px;
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resourceList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resourceItem {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.1s;
+}
+.resourceItem:last-child {
+  border-bottom: none;
+}
+.resourceItem:hover {
+  background-color: #f8fafc;
+}
+
+.resourceIcon {
+  font-size: 1.5rem;
+  margin-right: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  background: #eef2ff;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
 }
 
-.actionInfo {
+.resourceLink {
+  text-decoration: none;
+  color: var(--text-main);
+  font-weight: 500;
+  font-size: 1rem;
   flex: 1;
 }
-.actionInfo h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #1f2937;
-  font-weight: 600;
+.resourceLink:hover {
+  color: var(--primary);
+  text-decoration: underline;
 }
-.actionInfo p {
-  margin: 0;
+
+.emptyModule {
+  padding: 1.5rem;
+  color: #9ca3af;
   font-size: 0.9rem;
-  color: #6b7280;
+  font-style: italic;
+  text-align: center;
 }
 
-.actionBtn {
-  background: transparent;
-  border: 1px solid #1a73e8;
-  color: #1a73e8;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-.actionBtn:hover {
-  background: #eff6ff;
+.emptyText {
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  text-align: center;
 }
 
-/* Lista de Evaluaciones */
-.sectionTitle {
-  color: #1f2937;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
+/* Tarjeta Meet (Clase Virtual) */
+.card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.cardTitle {
+  margin-top: 0;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
+.meetBtn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(to right, #1a73e8, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 1rem;
+  transition: transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.meetBtn:hover {
+  transform: scale(1.02);
+}
+.meetBtn::before {
+  content: "📹";
+  font-size: 1.2rem;
+}
+
+/* Tarjetas de Evaluación (Derecha) */
 .evalGrid {
-  display: grid;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .evalCard {
   display: flex;
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
   text-decoration: none;
   align-items: center;
-  gap: 1.5rem;
+  gap: 14px;
   transition: all 0.2s;
 }
 .evalCard:hover {
-  border-color: #1a73e8;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-color: var(--primary);
+  transform: translateX(-4px);
+  box-shadow: var(--shadow);
 }
 
 .evalIcon {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
+  background: #fff7ed; /* Naranja muy suave para fuego */
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .evalContent {
@@ -144,36 +270,25 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
-.evalHeader h3 {
+.evalHeader h4 {
   margin: 0;
-  color: #1a73e8;
-  font-size: 1.1rem;
+  color: var(--text-main);
+  font-size: 0.95rem;
   font-weight: 600;
 }
 
 .evalMeta {
-  display: flex;
-  gap: 15px;
-  font-size: 0.9rem;
-  color: #6b7280;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
 .gradeBadge {
-  background: #10b981;
-  color: white;
+  background: #d1fae5;
+  color: #065f46;
   padding: 2px 8px;
   border-radius: 4px;
-  font-weight: bold;
-  font-size: 0.9rem;
-}
-
-.statusDone {
-  color: #10b981;
-  font-weight: 500;
-}
-.statusPending {
-  color: #f59e0b;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 700;
 }

@@ -6,6 +6,7 @@ const passport = require("passport");
 const db = require("./db");
 const rubricaRoutes = require("./routes/rubricas");
 const evaluacionRoutes = require("./routes/evaluaciones");
+const moduloRoutes = require("./routes/modulos");
 // Run Passport configuration
 require("./passport-config");
 
@@ -40,6 +41,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/clases", claseRoutes);
 app.use("/api/rubricas", rubricaRoutes);
 app.use("/api/evaluaciones", evaluacionRoutes);
+app.use("/api/modulos", moduloRoutes);
 // Root route for a simple server status check
 app.get("/", (req, res) => {
   res.send(
