@@ -1,45 +1,95 @@
-import React from "react";
+import React, { useState } from "react";
+import axios from "axios";
 import styles from "./LoginPage.module.css";
 
 function LoginPage() {
-  const handleLogin = () => {
-    window.location.href = "/api/auth/google";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLocalLogin = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Por favor ingresa correo y contraseña");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Enviamos credenciales al backend (Passport Local)
+      await axios.post("/api/auth/login", { email, password });
+
+      // Si es exitoso, forzamos una recarga completa para que
+      // App.jsx ejecute checkUserSession() y detecte la cookie.
+      window.location.href = "/";
+    } catch (err) {
+      console.error(err);
+      // Mostramos el mensaje que viene del backend (ej: "Contraseña incorrecta")
+      setError(err.response?.data?.message || "Error al iniciar sesión");
+      setLoading(false);
+    }
   };
 
   return (
     <div className={styles.container}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Bienvenido a EvaluaGO 🚀</h1>
-        <p className={styles.subtitle}>
-          La plataforma inteligente para gestionar tus evaluaciones y rúbricas.
-        </p>
+      <div className={styles.loginCard}>
+        <div className={styles.logo}>EvaluaGO 🚀</div>
+        <p className={styles.subtitle}>Plataforma de Gestión Académica</p>
 
-        <button onClick={handleLogin} className={styles.googleBtn}>
-          {/* SVG de Google optimizado */}
-          <svg
+        {/* OPCIÓN 1: GOOGLE */}
+        <a
+          href="http://localhost:3001/api/auth/google"
+          className={styles.googleBtn}
+        >
+          <img
+            src="https://www.svgrepo.com/show/475656/google-color.svg"
+            alt="Google"
             className={styles.googleIcon}
-            viewBox="0 0 18 18"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fill="#4285F4"
-              d="M17.64 9.20455c0-.63864-.05727-1.25182-.16364-1.84091H9.18182v3.48182h4.79091c-.20455 1.125-.82273 2.07818-1.77727 2.71818v2.25909h2.90909c1.70455-1.56818 2.68636-3.87273 2.68636-6.61818z"
-            />
-            <path
-              fill="#34A853"
-              d="M9.18182 18c2.43182 0 4.46364-.80591 5.95455-2.18182l-2.90909-2.25909c-.80591.54545-1.84091.87273-3.04545.87273-2.31818 0-4.28182-1.56818-5.00455-3.66818H1.27273v2.33182C2.76364 16.3125 5.75455 18 9.18182 18z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M4.17727 10.7625c-.14091-.41909-.21818-.87273-.21818-1.33182s.07727-.91273.21818-1.33182V5.76818H1.27273C.46364 7.2375 0 8.6875 0 10.2375s.46364 2.99091 1.27273 4.46023l2.90455-2.26682z"
-            />
-            <path
-              fill="#EA4335"
-              d="M9.18182 3.98182c1.32273 0 2.50909.45455 3.44091 1.34545l2.58182-2.58182C13.63636.959091 11.60455 0 9.18182 0 5.75455 0 2.76364 1.6875 1.27273 4.46023l2.90455 2.26682c.72273-2.1 2.68636-3.66818 5.00455-3.66818z"
-            />
-          </svg>
+          />
           Continuar con Google
-        </button>
+        </a>
+
+        <div className={styles.divider}>o ingresa con credenciales</div>
+
+        {/* OPCIÓN 2: LOCAL (ADMIN) */}
+        <form onSubmit={handleLocalLogin} className={styles.form}>
+          <div className={styles.inputGroup}>
+            <label htmlFor="email" className={styles.label}>
+              Correo Institucional
+            </label>
+            <input
+              id="email"
+              type="email"
+              className={styles.input}
+              placeholder="admin@escuela.edu"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label htmlFor="password" className={styles.label}>
+              Contraseña
+            </label>
+            <input
+              id="password"
+              type="password"
+              className={styles.input}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          {error && <div className={styles.errorMessage}>{error}</div>}
+
+          <button type="submit" className={styles.submitBtn} disabled={loading}>
+            {loading ? "Verificando..." : "Iniciar Sesión"}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -1,0 +1,79 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Card de la Tabla */
+.tableCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background-color: #f9fafb;
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+  vertical-align: middle;
+}
+
+/* Estilo especial para el código de acceso */
+.codeBadge {
+  background-color: #f3f4f6;
+  border: 1px dashed #9ca3af;
+  color: #374151;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.teacherInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.teacherName {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.teacherEmail {
+  font-size: 0.8rem;
+  color: #6b7280;
+}

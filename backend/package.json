@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
@@ -19,6 +20,7 @@
     "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "passport-local": "^1.0.0",
     "pg": "^8.16.3",
     "uuid": "^8.3.2",
     "xlsx": "^0.18.5"

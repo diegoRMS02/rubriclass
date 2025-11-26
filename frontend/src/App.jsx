@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Routes, Route, Navigate } from "react-router-dom";
 
-// Importamos el componente mágico
+// Importamos el componente mágico de scroll
 import ScrollToTop from "./components/ScrollToTop";
 
-// Importamos nuestras páginas
+// --- PÁGINAS EXISTENTES (Docente/Estudiante) ---
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import EvaluationPage from "./pages/EvaluationPage";
@@ -15,7 +15,16 @@ import TeacherClassPage from "./pages/TeacherClassPage";
 import CalendarPage from "./pages/CalendarPage";
 import TeacherGradebookPage from "./pages/TeacherGradebookPage";
 
+// --- PÁGINAS DE ADMINISTRADOR (NUEVAS) ---
+import AdminDashboard from "./pages/AdminDashboard";
+// Nota: Ajusta la ruta si moviste este archivo a la carpeta 'admin'
+import UserManagementPage from "./pages/UserManagementPage";
+// 👇 NUEVO IMPORT
+import ClassManagementPage from "./pages/ClassManagementPage";
+
+// --- LAYOUTS ---
 import MainLayout from "./layout/MainLayout";
+import AdminLayout from "./layout/AdminLayout"; // Layout oscuro
 
 function App() {
   const [user, setUser] = useState(null);
@@ -47,15 +56,22 @@ function App() {
 
   return (
     <>
-      {/* 👇 AQUÍ VA EL SCROLL TO TOP (Se ejecutará en cada cambio de ruta) */}
+      {/* ScrollToTop se ejecuta en cada cambio de ruta */}
       <ScrollToTop />
 
       <Routes>
-        {/* Ruta 1: Dashboard Principal */}
+        {/* --- RUTAS PÚBLICAS --- */}
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/" replace /> : <LoginPage />}
+        />
+
+        {/* --- RUTAS PRINCIPALES (Redirección inteligente) --- */}
         <Route
           path="/"
           element={
             user ? (
+              // Si es admin, el componente DashboardPage lo redirigirá a /admin
               <MainLayout user={user}>
                 <DashboardPage user={user} />
               </MainLayout>
@@ -65,13 +81,7 @@ function App() {
           }
         />
 
-        {/* Ruta 2: Login */}
-        <Route
-          path="/login"
-          element={user ? <Navigate to="/" replace /> : <LoginPage />}
-        />
-
-        {/* Ruta 3: Evaluación (Estudiante) */}
+        {/* --- RUTAS DE DOCENTE / ESTUDIANTE --- */}
         <Route
           path="/evaluacion/:id"
           element={
@@ -85,7 +95,6 @@ function App() {
           }
         />
 
-        {/* Ruta 4: Calificación (Docente) */}
         <Route
           path="/docente/evaluacion/:id"
           element={
@@ -99,7 +108,6 @@ function App() {
           }
         />
 
-        {/* Ruta 5: Aula Virtual (Estudiante) */}
         <Route
           path="/clase/:id"
           element={
@@ -113,7 +121,6 @@ function App() {
           }
         />
 
-        {/* Ruta 6: Gestión de Clase (Docente) */}
         <Route
           path="/docente/clase/:id"
           element={
@@ -127,7 +134,6 @@ function App() {
           }
         />
 
-        {/* Ruta 7: Calendario Académico */}
         <Route
           path="/calendario"
           element={
@@ -141,7 +147,6 @@ function App() {
           }
         />
 
-        {/* Ruta 8: Gradebook Global */}
         <Route
           path="/docente/gradebook/:id"
           element={
@@ -149,6 +154,50 @@ function App() {
               <MainLayout user={user}>
                 <TeacherGradebookPage />
               </MainLayout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        {/* --- ZONA DE ADMINISTRADOR --- */}
+
+        {/* Dashboard Admin */}
+        <Route
+          path="/admin"
+          element={
+            user && user.rol === "admin" ? (
+              <AdminLayout user={user}>
+                <AdminDashboard />
+              </AdminLayout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        {/* Gestión de Usuarios (Tabla) */}
+        <Route
+          path="/admin/usuarios"
+          element={
+            user && user.rol === "admin" ? (
+              <AdminLayout user={user}>
+                <UserManagementPage />
+              </AdminLayout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        {/* 👇 GESTIÓN DE CLASES (NUEVA RUTA) */}
+        <Route
+          path="/admin/clases"
+          element={
+            user && user.rol === "admin" ? (
+              <AdminLayout user={user}>
+                <ClassManagementPage />
+              </AdminLayout>
             ) : (
               <Navigate to="/" replace />
             )

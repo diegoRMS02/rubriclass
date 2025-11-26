@@ -1,0 +1,149 @@
+/* AdminLayout.module.css */
+
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f3f4f6; /* Fondo del contenido principal */
+  font-family: "Inter", sans-serif;
+}
+
+/* --- SIDEBAR OSCURO --- */
+.sidebar {
+  width: 260px;
+  background-color: #111827; /* Negro/Gris muy oscuro */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 0; /* Quitamos padding global para manejarlo por secciones */
+  flex-shrink: 0;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* --- LOGO --- */
+.logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #60a5fa; /* Azul claro para contraste */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 10px;
+}
+
+/* --- NAVEGACIÓN --- */
+.nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.navLink {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #9ca3af; /* Gris medio */
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navLink:hover {
+  background-color: rgba(255, 255, 255, 0.05); /* Brillo sutil */
+  color: white;
+}
+
+.activeLink {
+  background-color: #1f2937; /* Gris un poco más claro */
+  color: #60a5fa; /* Azul activo */
+  font-weight: 600;
+  border-left: 3px solid #60a5fa; /* Indicador lateral */
+}
+
+/* --- PERFIL ADMIN (Sección Inferior Oscura) --- */
+.adminProfile {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  background-color: #0f172a; /* Un tono más oscuro para el footer */
+  margin-top: auto;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px; /* Cuadrado redondeado */
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.adminInfo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.adminName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.adminEmail {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- BOTÓN LOGOUT (Estilo Dark Mode) --- */
+.logoutBtn {
+  width: 100%;
+  padding: 0.75rem;
+  background: transparent;
+  border: 1px solid #7f1d1d; /* Rojo oscuro borde */
+  color: #fca5a5; /* Rojo claro texto */
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.logoutBtn:hover {
+  background-color: #991b1b; /* Rojo intenso fondo */
+  color: white;
+  border-color: #991b1b;
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.4); /* Glow rojo */
+}
+
+/* --- CONTENIDO PRINCIPAL --- */
+.mainContent {
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  height: 100vh;
+}

@@ -1,61 +1,154 @@
 .container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background-color: var(--background); /* Usa nuestras variables globales */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 20px;
+  font-family: "Inter", sans-serif;
 }
 
-.card {
-  background-color: var(--secondary);
-  padding: 3rem;
-  border-radius: 16px; /* Bordes más suaves */
-  box-shadow: var(--shadow);
-  max-width: 450px;
+.loginCard {
+  background: white;
   width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   text-align: center;
-  border: 1px solid var(--border);
 }
 
-.title {
-  font-size: 1.8rem;
+.logo {
+  font-size: 2rem;
   font-weight: 800;
-  color: var(--text-main);
+  color: #1a73e8;
   margin-bottom: 0.5rem;
+  display: inline-block;
 }
 
 .subtitle {
-  color: var(--text-secondary);
-  margin-bottom: 2.5rem;
-  font-size: 1rem;
+  color: #5f6368;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
 }
 
+/* --- SECCIÓN GOOGLE --- */
 .googleBtn {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   width: 100%;
   padding: 12px;
-  background-color: white;
-  color: #3c4043;
   border: 1px solid #dadce0;
-  border-radius: 24px; /* Estilo "pill" de Google */
-  font-weight: 500;
+  background-color: white;
+  border-radius: 8px;
   font-size: 1rem;
+  font-weight: 600;
+  color: #3c4043;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  text-decoration: none; /* Importante porque es un link <a> */
 }
 
 .googleBtn:hover {
   background-color: #f8faff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-color: #d2e3fc;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .googleIcon {
   width: 20px;
   height: 20px;
-  margin-right: 12px;
+}
+
+/* --- DIVIDER --- */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #9aa0a6;
+  font-size: 0.85rem;
+  margin: 1.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.divider::before {
+  margin-right: 0.5em;
+}
+.divider::after {
+  margin-left: 0.5em;
+}
+
+/* --- FORMULARIO LOCAL --- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3c4043;
+}
+
+.input {
+  padding: 12px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+}
+
+.submitBtn {
+  background-color: #1a73e8;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.2s;
+}
+
+.submitBtn:hover {
+  background-color: #1557b0;
+}
+
+.submitBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  margin-top: 1rem;
+  padding: 10px;
+  background-color: #fce8e6;
+  color: #d93025;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  border: 1px solid #fad2cf;
 }

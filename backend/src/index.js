@@ -8,6 +8,8 @@ const rubricaRoutes = require("./routes/rubricas");
 const evaluacionRoutes = require("./routes/evaluaciones");
 const moduloRoutes = require("./routes/modulos");
 const recursoRoutes = require("./routes/recursos"); // <--- IMPORTA EL NUEVO
+const usuarioRoutes = require("./routes/usuarios"); // <-- NUEVO IMPORT
+const dashboardRoutes = require("./routes/dashboard"); // <--- IMPORTA ESTO
 // Run Passport configuration
 require("./passport-config");
 
@@ -45,6 +47,8 @@ app.use("/api/evaluaciones", evaluacionRoutes);
 app.use("/api/modulos", moduloRoutes);
 app.use("/api/recursos", recursoRoutes); // <--- ACTIVA LA RUTA
 app.use("/api/anuncios", require("./routes/anuncios"));
+app.use("/api/usuarios", usuarioRoutes);
+app.use("/api/dashboard", dashboardRoutes); // <--- AGREGA ESTA LÍNEA
 // Root route for a simple server status check
 app.get("/", (req, res) => {
   res.send(

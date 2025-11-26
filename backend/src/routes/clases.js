@@ -1,9 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-const { isAuthenticated, isTeacher } = require("../middleware/auth");
+const { isAuthenticated, isTeacher, isAdmin } = require("../middleware/auth");
 const { bucket } = require("../firebase-config");
-
 // --- Función para generar un código de inscripción aleatorio ---
 function generateCode() {
   const chars = "ABCDEFGHIJKLMNPQRSTUVWXYZ123456789";
@@ -94,7 +93,35 @@ router.post("/", [isAuthenticated, isTeacher], async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
+// ... imports ...
 
+// src/routes/clases.js
+
+// --- RUTA SOLO PARA ADMIN: VER TODAS LAS CLASES ---
+router.get("/admin/all", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    // CORRECCIÓN: Usamos los nombres reales de TU base de datos
+    // y les ponemos alias (AS) para que el frontend los entienda.
+    const result = await db.query(`
+      SELECT 
+        c.id, 
+        c.nombre_clase AS nombre,            
+        c.seccion, 
+        c.codigo_inscripcion AS codigo_acceso, 
+        u.nombre_completo AS docente, 
+        u.email AS docente_email
+      FROM Clases c
+      JOIN Usuarios u ON c.docente_id = u.id
+      ORDER BY c.id DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener clases admin:", error);
+    res.status(500).json({ message: "Error al cargar clases." });
+  }
+});
+
+// ... aquí siguen tus rutas existentes (router.post('/', ...), router.get('/', ...))
 // --- RUTA PARA EDITAR CLASE (PUT) ---
 router.put("/:id", [isAuthenticated, isTeacher], async (req, res) => {
   const { id } = req.params;
